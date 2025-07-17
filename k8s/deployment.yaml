@@ -1,0 +1,149 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: api-consulta-dividas
+  namespace: api-consulta
+  labels:
+    app: api-consulta-dividas
+spec:
+  replicas: 1  # Número de réplicas para alta disponibilidade
+  strategy:
+    canary:
+      # Reference to a Service which the controller will update to point to the canary ReplicaSet
+      canaryService: api-consulta-canary
+      # Reference to a Service which the controller will update to point to the stable ReplicaSet
+      stableService: api-consulta-estavel
+      trafficRouting:
+        nginx:
+          # Reference to an Ingress which has a rule pointing to the stable service (e.g. rollouts-demo-stable)
+          # This ingress will be cloned with a new name, in order to achieve NGINX traffic splitting.
+          stableIngress: api-consulta-dividas
+      steps:
+        - setWeight: 20
+        - pause: {}
+        - setWeight: 40
+        - pause: {duration: 10}
+        - setWeight: 60
+        - pause: {duration: 10}
+        - setWeight: 80
+        - pause: {duration: 10}
+  selector:
+    matchLabels:
+      app: api-consulta-dividas
+  template:
+    metadata:
+      labels:
+        app: api-consulta-dividas
+    spec:
+      containers:
+      - name: api-consulta-dividas
+        image: registry.digitalocean.com/poc-cobranca/poc-api-consulta:latest  # Substituir pela imagem do Docker Hub ou registry privado
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: mongo_uri
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: secret_key
+        - name: AUTHORIZATION_URL
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: authorization_url
+        - name: TOKEN_URL
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: token_url
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "250m"
+          limits:
+            memory: "200Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        volumeMounts:
+          - name: nfs
+            mountPath: "/mnt/arquivos"
+
+      volumes:
+        - name: nfs
+          persistentVolumeClaim:
+            claimName: nfs-pvc-api-consulta
+            readOnly: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-consulta-estavel
+  namespace: api-consulta
+spec:
+  selector:
+    app: api-consulta-dividas
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+ 
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-consulta-canary
+  namespace: api-consulta
+spec:
+  selector:
+    app: api-consulta-dividas
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-consulta-dividas
+  namespace: api-consulta
+  annotations:
+    cert-manager.io/issuer: letsencrypt-nginx
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: api.thiagoac.com  
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-consulta-estavel
+            port:
+              number: 80
+  tls:
+    - hosts:
+      - api.thiagoac.com
+      secretName: letsencrypt-nginx

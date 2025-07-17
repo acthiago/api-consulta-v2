@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ./src:/app/src
+      - ./storage:/app/storage
+    networks:
+      - api_network
+
+  mongo:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=api_consulta_v2
+    volumes:
+      - mongo_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    networks:
+      - api_network
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - api_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - api_network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - api_network
+
+volumes:
+  mongo_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  api_network:
+    driver: bridge
