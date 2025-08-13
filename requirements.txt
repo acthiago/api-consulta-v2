@@ -22,7 +22,7 @@ python-dotenv==1.0.0
 
 # Validation
 email-validator==2.1.0
-cpf-cnpj-validator==1.0.0
+cpf-cnpj-validator
 
 # HTTP Client
 httpx==0.25.2
