@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  api-dev:
+    build:
+      context: .
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - MONGO_URI=mongodb://mongo-dev:27017
+      - REDIS_URL=redis://redis-dev:6379/0
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src:ro
+      - ./logs:/app/logs
+      - ./storage:/app/storage
+    depends_on:
+      - mongo-dev
+      - redis-dev
+    networks:
+      - api_dev_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mongo-dev:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=api_consulta_v2_dev
+    volumes:
+      - mongo_dev_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    networks:
+      - api_dev_network
+    restart: unless-stopped
+
+  redis-dev:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - api_dev_network
+    restart: unless-stopped
+
+  prometheus-dev:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - api_dev_network
+    restart: unless-stopped
+
+  grafana-dev:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks:
+      - api_dev_network
+    restart: unless-stopped
+
+volumes:
+  mongo_dev_data:
+  redis_dev_data:
+  grafana_dev_data:
+
+networks:
+  api_dev_network:
+    driver: bridge
