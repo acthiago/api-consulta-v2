@@ -5,6 +5,44 @@
 - **Python 3.11+**
 - **Docker & Docker Compose** (recomendado)
 - **Git**
+- **MongoDB 6.0+** (local ou Docker)
+- **Redis 7.0+** (local ou Docker)
+
+## 📁 Estrutura do Projeto
+
+```
+api-consulta-v2/
+├── src/
+│   ├── domain/                    # ✅ Camada de Domínio
+│   │   ├── entities/
+│   │   │   ├── cliente.py        # Entidade Cliente
+│   │   │   ├── pagamento.py      # Entidade Pagamento
+│   │   │   └── boleto.py         # Entidade Boleto
+│   │   └── value_objects/
+│   │       ├── cpf.py            # Value Object CPF
+│   │       ├── email.py          # Value Object Email
+│   │       └── money.py          # Value Object Money
+│   ├── application/               # ✅ Camada de Aplicação
+│   │   ├── use_cases/
+│   │   │   ├── auth/             # Use Cases de Autenticação
+│   │   │   ├── cliente/          # Use Cases de Cliente
+│   │   │   ├── pagamento/        # Use Cases de Pagamento
+│   │   │   └── boleto/           # Use Cases de Boleto
+│   │   ├── dtos/                 # Data Transfer Objects
+│   │   └── interfaces/           # Interfaces (Ports)
+│   ├── infrastructure/           # 🚧 Camada de Infraestrutura
+│   ├── presentation/             # 🚧 Camada de Apresentação
+│   ├── config/
+│   │   └── settings.py           # Configurações
+│   └── main.py                   # Ponto de entrada FastAPI
+├── tests/                        # Testes
+├── docs/                         # Documentação
+├── k8s/                         # Configurações Kubernetes
+├── monitoring/                   # Grafana + Prometheus
+├── docker-compose.yml           # Docker Compose
+├── Dockerfile                   # Container da aplicação
+└── requirements.txt             # Dependências Python
+```
 
 ## ⚙️ Setup Local
 
@@ -13,7 +51,7 @@
 ```bash
 # Clone o repositório
 git clone <repository-url>
-cd api_v2
+cd api-consulta-v2/api-consulta-v2
 
 # Copie as configurações
 cp .env.example .env
@@ -35,6 +73,7 @@ ENVIRONMENT=development
 # Security
 SECRET_KEY=sua-chave-secreta-muito-segura-aqui
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # Database
 MONGO_URI=mongodb://localhost:27017
@@ -42,12 +81,19 @@ MONGO_DB_NAME=api_consulta_v2
 
 # Cache
 REDIS_URL=redis://localhost:6379/0
+CACHE_TTL_CLIENTE=1800  # 30 minutos
+CACHE_TTL_PAGAMENTO=1800  # 30 minutos  
+CACHE_TTL_BOLETO=3600  # 1 hora
 
 # Rate Limiting
 RATE_LIMIT_PER_MINUTE=60  # Ajuste para desenvolvimento
 
 # CORS (adicione suas URLs)
 CORS_ORIGINS=["http://localhost:3000", "http://localhost:8080"]
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FORMAT=json  # json ou text
 ```
 
 ### 3. Instalação de Dependências

@@ -2,6 +2,17 @@
 
 > **Versão moderna com Arquitetura Hexagonal, segurança aprimorada e melhores práticas**
 
+## 📊 Status do Projeto
+
+![Domain Layer](https://img.shields.io/badge/Domain%20Layer-100%25%20✅-brightgreen)
+![Application Layer](https://img.shields.io/badge/Application%20Layer-100%25%20✅-brightgreen)
+![Infrastructure Layer](https://img.shields.io/badge/Infrastructure%20Layer-20%25%20🚧-yellow)
+![Presentation Layer](https://img.shields.io/badge/Presentation%20Layer-10%25%20🚧-yellow)
+
+![Use Cases](https://img.shields.io/badge/Use%20Cases-10/10%20✅-brightgreen)
+![Documentation](https://img.shields.io/badge/Documentation-100%25%20✅-brightgreen)
+![Architecture](https://img.shields.io/badge/Architecture-Hexagonal%20✅-blue)
+
 ## 📋 Visão Geral
 
 Esta é uma API RESTful para gestão de cobranças e consultas de clientes, completamente refatorada seguindo os princípios da **Arquitetura Hexagonal** (Ports & Adapters), com foco em:
@@ -19,32 +30,46 @@ Esta é uma API RESTful para gestão de cobranças e consultas de clientes, comp
 │                    PRESENTATION LAYER                       │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
 │  │ Controllers │ │ Middleware  │ │     API Schemas         ││
+│  │  (FastAPI)  │ │(Rate Limit) │ │    (Pydantic)          ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────────┐
-│                  APPLICATION LAYER                          │
+│                  APPLICATION LAYER ✅                      │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │ Use Cases   │ │    DTOs     │ │      Interfaces         ││
+│  │ Use Cases   │ │    DTOs     │ │     Interfaces          ││
+│  │ • Auth (2)  │ │ • Cliente   │ │ • IClienteRepository    ││
+│  │ • Cliente(3)│ │ • Auth      │ │ • IPagamentoRepository  ││
+│  │ • Pagmto(2) │ │ • Pagamento │ │ • IBoletoRepository     ││
+│  │ • Boleto(3) │ │ • Boleto    │ │ • IJWTService           ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────────┐
-│                    DOMAIN LAYER                             │
+│                    DOMAIN LAYER ✅                         │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
 │  │  Entities   │ │Value Objects│ │   Domain Services       ││
-│  │             │ │             │ │   Repository Ports      ││
+│  │ • Cliente   │ │ • CPF       │ │                         ││
+│  │ • Pagamento │ │ • Email     │ │                         ││
+│  │ • Boleto    │ │ • Money     │ │                         ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────────┐
-│                INFRASTRUCTURE LAYER                         │
+│                INFRASTRUCTURE LAYER 🚧                     │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
 │  │  Database   │ │    Cache    │ │   External APIs         ││
+│  │  MongoDB    │ │   Redis     │ │     JWT Auth            ││
 │  │  Security   │ │  Monitoring │ │   File Storage          ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### 📊 Status de Implementação:
+- ✅ **Domain Layer**: Completo (entidades + value objects)
+- ✅ **Application Layer**: Completo (12 use cases + DTOs + interfaces)
+- 🚧 **Infrastructure Layer**: Em desenvolvimento
+- 🚧 **Presentation Layer**: Refatoração pendente
 
 ## 🚀 Início Rápido
 
@@ -86,7 +111,11 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 📖 Documentação
 
-- [📋 Guia de Arquitetura](docs/architecture.md)
+- [📋 API Reference](docs/API_REFERENCE.md) - **NOVO**: Documentação completa dos Use Cases
+- [🛣️ Roadmap de Desenvolvimento](docs/ROADMAP.md) - **NOVO**: Status e próximos passos
+- [🏛️ Arquitetura](docs/ARCHITECTURE.md) - **NOVO**: Detalhes da arquitetura hexagonal
+- [🚀 Guia de Setup](docs/SETUP_GUIDE.md) - **ATUALIZADO**: Configuração atualizada
+- [📝 Changelog](CHANGELOG.md) - **NOVO**: Histórico de mudanças v2.0
 - [🔧 Guia de Configuração](docs/configuration.md)
 - [🔒 Guia de Segurança](docs/security.md)
 - [📊 Guia de Performance](docs/performance.md)
@@ -131,29 +160,40 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 🌟 Principais Funcionalidades
 
-### 🔐 Autenticação
-- Login com username/password
-- Autenticação client_credentials para integrações
-- Refresh tokens automáticos
-- Multi-tenant support
+### 🔐 Autenticação ✅
+- ✅ Login com username/password implementado
+- ✅ Renovação de tokens JWT implementada
+- ✅ Validação de credenciais com bcrypt
+- ✅ Access/Refresh tokens com diferentes TTLs
+- 🚧 Autenticação client_credentials para integrações
+- 🚧 Multi-tenant support
 
-### 👥 Gestão de Clientes
-- Consulta por CPF/CNPJ
-- Validação de documentos
-- Histórico completo
-- Cache inteligente
+### 👥 Gestão de Clientes ✅
+- ✅ Busca por ID com cache Redis implementada
+- ✅ Criação com validação de CPF/email implementada
+- ✅ Atualização com invalidação de cache implementada
+- ✅ Validação rigorosa de documentos (CPF/CNPJ)
+- ✅ Histórico de operações via logs estruturados
+- ✅ Cache inteligente com TTL otimizado
 
-### 💳 Pagamentos
-- Múltiplas formas de pagamento
-- Integração PIX
-- Boletos com QR Code
-- Conciliação automática
+### 💳 Pagamentos ✅
+- ✅ Processamento com validação implementado
+- ✅ Consulta de status implementada
+- ✅ Múltiplos métodos (cartão, PIX, boleto, etc.)
+- ✅ Regras de negócio para aprovação/rejeição
+- ✅ Códigos de transação únicos
+- 🚧 Integração PIX
+- 🚧 Conciliação automática
 
-### 📄 Boletos
-- Geração em PDF otimizada
-- QR Codes PIX integrados
-- Templates customizáveis
-- Armazenamento seguro
+### 📄 Boletos ✅
+- ✅ Geração com linha digitável implementada
+- ✅ Consulta por ID implementada
+- ✅ Cancelamento com validações implementado
+- ✅ Códigos de barras simulados
+- ✅ Controle de vencimento e status
+- 🚧 Geração em PDF otimizada
+- 🚧 QR Codes PIX integrados
+- 🚧 Templates customizáveis
 
 ## 🔄 Migração da v1
 
@@ -166,13 +206,6 @@ Se você está migrando da versão anterior, consulte nosso [Guia de Migração]
 3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
 4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
-
-## 📞 Suporte
-
-- 📧 Email: support@example.com
-- 💬 Slack: #api-support
-- 📖 Wiki: [Confluence](https://wiki.example.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/org/repo/issues)
 
 ## 📄 Licença
 
