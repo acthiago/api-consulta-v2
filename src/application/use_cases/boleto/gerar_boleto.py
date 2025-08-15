@@ -3,7 +3,6 @@ Use Case: Gerar Boleto
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 import structlog
 
