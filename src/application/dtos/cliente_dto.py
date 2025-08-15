@@ -3,14 +3,14 @@ DTOs para Cliente - Data Transfer Objects
 """
 
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class ClienteDTO:
     """DTO para transferência de dados de Cliente"""
-    
+
     id: str
     cpf: str
     nome: str
@@ -22,7 +22,7 @@ class ClienteDTO:
     ativo: bool
     dividas_ids: List[str]
     historico_interacoes: List[Dict[str, Any]]
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Converte DTO para dicionário"""
         return {
@@ -33,17 +33,19 @@ class ClienteDTO:
             "telefone": self.telefone,
             "endereco": self.endereco,
             "data_cadastro": self.data_cadastro.isoformat(),
-            "data_atualizacao": self.data_atualizacao.isoformat() if self.data_atualizacao else None,
+            "data_atualizacao": (
+                self.data_atualizacao.isoformat() if self.data_atualizacao else None
+            ),
             "ativo": self.ativo,
             "dividas_ids": self.dividas_ids,
-            "historico_interacoes": self.historico_interacoes
+            "historico_interacoes": self.historico_interacoes,
         }
 
 
 @dataclass
 class CriarClienteDTO:
     """DTO para criação de Cliente"""
-    
+
     cpf: str
     nome: str
     email: str
@@ -54,7 +56,7 @@ class CriarClienteDTO:
 @dataclass
 class AtualizarClienteDTO:
     """DTO para atualização de Cliente"""
-    
+
     nome: Optional[str] = None
     email: Optional[str] = None
     telefone: Optional[str] = None
@@ -64,5 +66,5 @@ class AtualizarClienteDTO:
 @dataclass
 class BuscarClienteDTO:
     """DTO para busca de Cliente"""
-    
+
     cpf: str

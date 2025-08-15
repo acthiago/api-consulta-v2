@@ -3,15 +3,15 @@ DTOs para Pagamento - Data Transfer Objects
 """
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 
 @dataclass
 class PagamentoDTO:
     """DTO para transferência de dados de Pagamento"""
-    
+
     id: str
     divida_id: str
     valor: Decimal
@@ -26,7 +26,7 @@ class PagamentoDTO:
 @dataclass
 class ProcessarPagamentoDTO:
     """DTO para processamento de pagamento"""
-    
+
     divida_id: str
     valor: Decimal
     forma_pagamento: str
@@ -36,14 +36,14 @@ class ProcessarPagamentoDTO:
 @dataclass
 class ConsultarStatusPagamentoDTO:
     """DTO para consulta de status de pagamento"""
-    
+
     pagamento_id: str
 
 
 @dataclass
 class StatusPagamentoDTO:
     """DTO para resposta de status de pagamento"""
-    
+
     id: str
     status: str
     data_processamento: Optional[datetime]
