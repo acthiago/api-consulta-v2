@@ -85,7 +85,7 @@ jobs:
       - name: 🛡️ Security scan (Bandit)
         run: |
           pip install bandit
-          bandit -r src/ -f json -o bandit-report.json
+          bandit -r src/ -c .bandit -f json -o bandit-report.json
 
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@v4
