@@ -4,11 +4,7 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branche      - name: 🔍 Validate Docker configuration
-        run: |
-          echo "Registry: DockerHub (docker.io)"
-          echo "Image Name: ${{ env.IMAGE_NAME }}"
-          echo "Full image path: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}"ain]
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -35,7 +31,7 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: � Setup Python ${{ env.PYTHON_VERSION }}
+      - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
