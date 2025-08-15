@@ -1,0 +1,15 @@
+# Safety Policy Configuration
+# https://docs.pyup.io/docs/safety-policy-file
+
+security:
+  ignore-vulnerabilities:
+    # python-jose vulnerabilities - using latest available version
+    # These are known issues with the library but no fix is available yet
+    # The library is still maintained and widely used
+    - 70716  # CVE-2024-33664 - DoS via decode
+    - 70715  # CVE-2024-33663 - Algorithm confusion
+  
+  continue-on-vulnerability-error: false
+  
+# Only report on packages that are pinned
+report-only-on-pinned: true

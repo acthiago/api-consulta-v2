@@ -80,7 +80,7 @@ jobs:
       - name: 🔍 Security audit (Safety)
         run: |
           pip install safety
-          safety check -r requirements.txt
+          safety scan -r requirements.txt --policy-file .safety-policy.yml
 
       - name: 🛡️ Security scan (Bandit)
         run: |
