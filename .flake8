@@ -1,10 +1,6 @@
 [flake8]
 max-line-length = 88
-extend-ignore = 
-    E203,  # whitespace before ':'
-    W503,  # line break before binary operator
-    E501,  # line too long (handled by black)
-    F401,  # imported but unused (handled by isort)
+extend-ignore = E203,W503,E501,F401
 exclude = 
     .git,
     __pycache__,
@@ -14,7 +10,7 @@ exclude =
     .pytest_cache,
     build,
     dist,
-    migrations,
+    migrations
 per-file-ignores =
     __init__.py: F401
     tests/*: F401,F811,E501
