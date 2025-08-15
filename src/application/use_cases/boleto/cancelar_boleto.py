@@ -24,7 +24,7 @@ class CancelarBoletoUseCase:
         self.cache_service = cache_service
 
     async def execute(
-        self, boleto_id: str, motivo: str = None
+        self, boleto_id: str, motivo: Optional[str] = None
     ) -> Optional[CancelarBoletoResponseDTO]:
         """
         Executa o cancelamento de boleto
