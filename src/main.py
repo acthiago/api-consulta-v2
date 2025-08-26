@@ -17,7 +17,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from config.settings import get_settings
+from src.config.settings import get_settings
 
 # Configure structured logging
 structlog.configure(
@@ -267,7 +267,7 @@ async def buscar_cliente(request: Request, cpf: str):
     """Busca cliente por CPF com rate limiting e validação"""
     try:
         # Import here to avoid circular imports
-        from domain.value_objects.cpf import CPF
+        from src.domain.value_objects.cpf import CPF
 
         # Validate CPF
         cpf_obj = CPF(cpf)
