@@ -3,7 +3,6 @@ Use Case: Processar Pagamento
 """
 
 from datetime import datetime
-from typing import Optional
 
 import structlog
 

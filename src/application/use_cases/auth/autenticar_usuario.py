@@ -2,7 +2,7 @@
 Use Case: Autenticar Usuário
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional
 
 import structlog

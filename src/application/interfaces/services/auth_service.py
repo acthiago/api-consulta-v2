@@ -6,8 +6,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import Optional
 
-from ..repositories.cliente_repository import IClienteRepository
-
 
 class IPasswordService(ABC):
     """Interface para serviço de senhas"""

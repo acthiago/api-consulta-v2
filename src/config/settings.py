@@ -12,66 +12,62 @@ class Settings(BaseSettings):
     """Configurações da aplicação usando Pydantic Settings"""
 
     # Application
-    APP_NAME: str = Field("API de Consulta e Cobranças v2", env="APP_NAME")
-    APP_VERSION: str = Field("2.0.0", env="APP_VERSION")
-    APP_DESCRIPTION: str = Field("API com Arquitetura Hexagonal", env="APP_DESCRIPTION")
-    DEBUG: bool = Field(False, env="DEBUG")
-    ENVIRONMENT: str = Field("production", env="ENVIRONMENT")
+    APP_NAME: str = Field(default="API de Consulta e Cobranças v2")
+    APP_VERSION: str = Field(default="2.0.0")
+    APP_DESCRIPTION: str = Field(default="API com Arquitetura Hexagonal")
+    DEBUG: bool = Field(default=False)
+    ENVIRONMENT: str = Field(default="production")
 
     # Server
-    HOST: str = Field("0.0.0.0", env="HOST")
-    PORT: int = Field(8000, env="PORT")
-    RELOAD: bool = Field(False, env="RELOAD")
+    HOST: str = Field(default="0.0.0.0")
+    PORT: int = Field(default=8000)
+    RELOAD: bool = Field(default=False)
 
     # Security
-    SECRET_KEY: str = Field("change-this-secret-key", env="SECRET_KEY")
-    JWT_ALGORITHM: str = Field("HS256", env="JWT_ALGORITHM")
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES"
-    )
-    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(7, env="JWT_REFRESH_TOKEN_EXPIRE_DAYS")
+    SECRET_KEY: str = Field(default="change-this-secret-key")
+    JWT_ALGORITHM: str = Field(default="HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
 
     # Database
-    MONGO_URI: str = Field("mongodb://localhost:27017", env="MONGO_URI")
-    MONGO_DB_NAME: str = Field("api_consulta_v2", env="MONGO_DB_NAME")
-    MONGO_MIN_POOL_SIZE: int = Field(10, env="MONGO_MIN_POOL_SIZE")
-    MONGO_MAX_POOL_SIZE: int = Field(100, env="MONGO_MAX_POOL_SIZE")
-    MONGO_MAX_IDLE_TIME_MS: int = Field(30000, env="MONGO_MAX_IDLE_TIME_MS")
+    MONGO_URI: str = Field(default="mongodb://localhost:27017")
+    MONGO_DB_NAME: str = Field(default="api_consulta_v2")
+    MONGO_MIN_POOL_SIZE: int = Field(default=10)
+    MONGO_MAX_POOL_SIZE: int = Field(default=100)
+    MONGO_MAX_IDLE_TIME_MS: int = Field(default=30000)
 
     # Cache
-    REDIS_URL: str = Field("redis://localhost:6379/0", env="REDIS_URL")
-    CACHE_TTL_SECONDS: int = Field(300, env="CACHE_TTL_SECONDS")
+    REDIS_URL: str = Field(default="redis://localhost:6379/0")
+    CACHE_TTL_SECONDS: int = Field(default=300)
 
     # Rate Limiting
-    RATE_LIMIT_PER_MINUTE: int = Field(60, env="RATE_LIMIT_PER_MINUTE")
-    RATE_LIMIT_PER_HOUR: int = Field(1000, env="RATE_LIMIT_PER_HOUR")
-    RATE_LIMIT_PER_DAY: int = Field(10000, env="RATE_LIMIT_PER_DAY")
+    RATE_LIMIT_PER_MINUTE: int = Field(default=60)
+    RATE_LIMIT_PER_HOUR: int = Field(default=1000)
+    RATE_LIMIT_PER_DAY: int = Field(default=10000)
 
     # CORS
-    ENABLE_CORS: bool = Field(True, env="ENABLE_CORS")
-    CORS_ORIGINS: List[str] = Field(["http://localhost:3000"], env="CORS_ORIGINS")
+    ENABLE_CORS: bool = Field(default=True)
+    CORS_ORIGINS: List[str] = Field(default=["http://localhost:3000"])
 
     # Documentation
-    ENABLE_DOCS: bool = Field(True, env="ENABLE_DOCS")
-    DOCS_URL: str = Field("/docs", env="DOCS_URL")
-    REDOC_URL: str = Field("/redoc", env="REDOC_URL")
+    ENABLE_DOCS: bool = Field(default=True)
+    DOCS_URL: str = Field(default="/docs")
+    REDOC_URL: str = Field(default="/redoc")
 
     # Monitoring
-    ENABLE_METRICS: bool = Field(True, env="ENABLE_METRICS")
-    METRICS_PATH: str = Field("/metrics", env="METRICS_PATH")
+    ENABLE_METRICS: bool = Field(default=True)
+    METRICS_PATH: str = Field(default="/metrics")
 
     # Logging
-    LOG_LEVEL: str = Field("INFO", env="LOG_LEVEL")
-    LOG_FORMAT: str = Field("json", env="LOG_FORMAT")
-    LOG_FILE: Optional[str] = Field(None, env="LOG_FILE")
+    LOG_LEVEL: str = Field(default="INFO")
+    LOG_FORMAT: str = Field(default="json")
+    LOG_FILE: Optional[str] = Field(default=None)
 
     # Storage
-    STORAGE_TYPE: str = Field("local", env="STORAGE_TYPE")
-    STORAGE_PATH: str = Field("./storage", env="STORAGE_PATH")
+    STORAGE_TYPE: str = Field(default="local")
+    STORAGE_PATH: str = Field(default="./storage")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {"env_file": ".env", "case_sensitive": True}
 
 
 # Global settings instance

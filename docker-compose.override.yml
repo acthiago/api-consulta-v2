@@ -1,0 +1,13 @@
+# Override file for local development
+# This file is automatically loaded by docker-compose
+version: '3.8'
+
+services:
+  api:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./src:/app/src:ro  # Live reload
+    ports:
+      - "8000:8000"  # Expose for local access

@@ -2,8 +2,6 @@
 Use Case: Atualizar Cliente
 """
 
-from typing import Optional
-
 import structlog
 
 from ...domain.entities.cliente import Cliente

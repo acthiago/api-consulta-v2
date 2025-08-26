@@ -3,10 +3,8 @@ API de Consulta e Cobranças v2.0
 Arquitetura Hexagonal com segurança e performance aprimoradas
 """
 
-import asyncio
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Dict
 
 import structlog
 import uvicorn
@@ -281,7 +279,9 @@ async def buscar_cliente(request: Request, cpf: str):
             "cpf": cpf_obj.formatado(),
             "nome": "Cliente Exemplo",
             "status": "ativo",
-            "message": "Implementação pendente - usar casos de uso da camada de aplicação",
+            "message": (
+                "Implementação pendente - usar casos de uso da camada de aplicação"
+            ),
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -331,8 +331,12 @@ async def status_pagamento(request: Request, id_pagamento: str):
 
 # TODO: Include routers from presentation layer when implemented
 # app.include_router(auth_controller.router, prefix="/auth", tags=["Authentication"])
-# app.include_router(cliente_controller.router, prefix="/clientes", tags=["Clientes"])
-# app.include_router(pagamento_controller.router, prefix="/pagamentos", tags=["Pagamentos"])
+# app.include_router(
+#     cliente_controller.router, prefix="/clientes", tags=["Clientes"]
+# )
+# app.include_router(
+#     pagamento_controller.router, prefix="/pagamentos", tags=["Pagamentos"]
+# )
 # app.include_router(boleto_controller.router, prefix="/boletos", tags=["Boletos"])
 
 if __name__ == "__main__":

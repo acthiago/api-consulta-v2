@@ -2,8 +2,6 @@
 Use Case: Criar Cliente
 """
 
-from datetime import datetime
-
 import structlog
 
 from ...domain.entities.cliente import Cliente

@@ -1,0 +1,6 @@
+exclude_dirs: ['./venv', './tests', './scripts']
+skips: ['B106', 'B311', 'B104']
+
+# B106: hardcoded_password_funcarg - "bearer" é um tipo de token padrão, não uma senha
+# B311: blacklist - random é usado para simulação de dados, não para criptografia  
+# B104: hardcoded_bind_all_interfaces - binding em 0.0.0.0 é necessário para container Docker
