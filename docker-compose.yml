@@ -8,8 +8,9 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017
       - REDIS_URL=redis://redis:6379/0
-      - DEBUG=true
-      - LOG_LEVEL=DEBUG
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
     depends_on:
       - mongo
       - redis

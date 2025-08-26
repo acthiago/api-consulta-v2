@@ -78,18 +78,25 @@ docker-build: ## 🏗️  Build Docker image
 	@echo "$(GREEN)🏗️  Building Docker image...$(RESET)"
 	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
-docker-run: ## 🐳 Run Docker container
-	@echo "$(GREEN)🐳 Running Docker container...$(RESET)"
-	docker run -d --name api-consulta-v2 -p 8000:8000 $(DOCKER_IMAGE):$(DOCKER_TAG)
+docker-dev: ## � Run development environment
+	@echo "$(GREEN)🚀 Starting development environment...$(RESET)"
+	docker-compose -f docker-compose.dev.yml up -d
+	@echo "$(GREEN)✅ Development environment running at http://localhost:8000$(RESET)"
 
-docker-stop: ## ⏹️  Stop Docker container
-	@echo "$(YELLOW)⏹️  Stopping Docker container...$(RESET)"
-	docker stop api-consulta-v2 || true
-	docker rm api-consulta-v2 || true
+docker-prod: ## 🏭 Run production environment
+	@echo "$(GREEN)🏭 Starting production environment...$(RESET)"
+	docker-compose -f docker-compose.prod.yml up -d
+	@echo "$(GREEN)✅ Production environment running at http://localhost:8000$(RESET)"
+
+docker-stop: ## ⏹️  Stop all Docker services
+	@echo "$(YELLOW)⏹️  Stopping all Docker services...$(RESET)"
+	docker-compose -f docker-compose.dev.yml down || true
+	docker-compose -f docker-compose.prod.yml down || true
+	docker-compose down || true
 
 docker-logs: ## 📄 Show Docker logs
 	@echo "$(GREEN)📄 Showing Docker logs...$(RESET)"
-	docker logs -f api-consulta-v2
+	docker-compose logs -f
 
 ##@ 🚀 Production
 build: ## 🏭 Production build
