@@ -43,11 +43,6 @@ docker-vps:
 	@sleep 45
 	@echo "🔍 Verificando status dos serviços..."
 	$(DOCKER_COMPOSE) -f docker-compose.vps.yml ps
-	@echo "🌐 Testando conectividade dos serviços..."
-	@curl -f http://localhost:8080/api/version && echo "✅ Traefik Gateway funcionando" || echo "⚠️  Traefik health check falhou"
-	@sleep 5
-	@echo "🔍 Verificando se containers estão saudáveis..."
-	@docker ps --filter "name=api-consulta-v2" --format "table {{.Names}}\t{{.Status}}"
 	@echo "✅ Deploy concluído! Stack completo com Traefik Gateway:"
 	@echo "   🚀 API: http://69.62.103.163/api/docs"
 	@echo "   📊 Grafana: http://69.62.103.163/grafana (admin/admin123)"

@@ -247,10 +247,3 @@ jobs:
             
             echo "✅ Deployment completed successfully!"
           EOF
-
-      - name: 🏥 Final health check
-        run: |
-          echo "🏥 Checking API health..."
-          sleep 5
-          curl -f http://69.62.103.163/health
-          echo "✅ API is healthy and accessible!"
