@@ -1,29 +1,29 @@
 """
-API de Consulta e Cobranças v2.0
+API de Consulta de Boletos - v2
 Arquitetura Hexagonal com segurança e performance aprimoradas
 """
 
-import time
-from contextlib import asynccontextmanager
-from typing import Optional, List
-from datetime import datetime, timedelta
-import uuid
-import random
 import os
+import random
 import re
+import time
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 import structlog
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, Response, Form, Depends, status
+from bson import ObjectId
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from pymongo import MongoClient
-from bson import ObjectId
-from dotenv import load_dotenv
-from pydantic import BaseModel, EmailStr
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from pydantic import BaseModel, EmailStr
+from pymongo import MongoClient
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -221,7 +221,7 @@ def validate_cpf(cpf: str) -> bool:
     Valida um CPF usando o algoritmo oficial brasileiro
     """
     import re
-    
+
     # Remove caracteres não numéricos
     cpf = re.sub(r'[^\d]', '', cpf)
     

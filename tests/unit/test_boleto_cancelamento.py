@@ -2,10 +2,12 @@
 Testes unitários para cancelamento de boleto
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from bson import ObjectId
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
+from bson import ObjectId
+
 
 # Simula testes para o endpoint de cancelamento de boleto
 class TestBoletoCancelamento:
