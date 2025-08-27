@@ -5,6 +5,71 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [2.1.0] - 2025-08-27
+
+### 🎉 **FEATURE RELEASE - Sistema Completo de Gestão Financeira**
+
+### ✨ **Adicionado**
+
+#### 💼 **Sistema Completo de Boletos e Cancelamento**
+- **Endpoint de Cancelamento de Boleto**:
+  - `POST /api/v1/boleto/{boleto_id}/cancelar` - Cancela boleto e restaura dívidas
+  - Validação de status (impede cancelamento de boletos pagos/cancelados)
+  - Restauração inteligente de dívidas baseada na data de vencimento
+  - Preservação completa do histórico na coleção `auditoria`
+  - Transações ACID com MongoDB para garantir consistência
+
+#### 🔄 **Regras de Negócio Avançadas**
+- **Ciclo de Vida Completo das Dívidas**:
+  - Status automático: `ativo` → `vencido` → `inadimplente` baseado em data
+  - Bloqueio de re-negociação quando dívida tem boleto ativo
+  - Liberação automática para nova negociação após cancelamento
+- **Sistema de Auditoria**:
+  - Registro de todas as operações financeiras
+  - Rastreamento de usuário responsável por cada ação
+  - Timestamps precisos para compliance e auditoria
+
+#### 🛡️ **Melhorias de Segurança e Validação**
+- **Correção da Função de Autenticação**:
+  - `get_current_user()` agora retorna dicionário com `username` e `role`
+  - Melhor integração com endpoints que requerem informações do usuário
+- **Validações Robustas**:
+  - Verificação de ObjectId do MongoDB antes de operações
+  - Validação de estado de boletos antes de cancelamento
+  - Verificação de existência de dívidas associadas
+
+### 🔧 **Melhorado**
+
+#### 📊 **Organização de Código**
+- **Limpeza de Importações**:
+  - Remoção de importações duplicadas em `main.py`
+  - Organização mais clara das dependências
+  - Import do `ObjectId` movido para nível global
+
+#### 📝 **Documentação Atualizada**
+- **README.md** completamente reescrito:
+  - Seção de funcionalidades implementadas
+  - Exemplos de uso dos endpoints
+  - Documentação das regras de negócio
+  - Status atual do projeto atualizado
+- **Swagger UI** com nova documentação:
+  - Endpoint de cancelamento documentado
+  - Modelos de resposta atualizados
+  - Exemplos de uso incluídos
+
+### ✅ **Testado**
+
+#### 🧪 **Cenários de Teste Validados**
+- **Cancelamento de Boleto**:
+  - ✅ Cancelamento bem-sucedido com restauração de dívidas
+  - ✅ Tentativa de cancelar boleto já cancelado (erro 400)
+  - ✅ Tentativa de cancelar boleto pago (erro 400)
+  - ✅ Geração de novo boleto após cancelamento
+- **Integração Completa**:
+  - ✅ Fluxo completo: consulta cliente → lista dívidas → gera boleto → cancela → nova negociação
+  - ✅ Preservação de histórico em todas as operações
+  - ✅ Transações ACID funcionando corretamente
+
 ## [2.0.0] - 2025-08-13
 
 ### 🎉 **MAJOR RELEASE - Arquitetura Hexagonal Completa**

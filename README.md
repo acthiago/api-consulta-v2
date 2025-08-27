@@ -1,75 +1,93 @@
 # 🚀 API de Consulta e Cobranças v2.0
 
-> **Versão moderna com Arquitetura Hexagonal, segurança aprimorada e melhores práticas**
+> **Sistema completo de gestão financeira com negociação de dívidas e cancelamento de boletos**
 
 ## 📊 Status do Projeto
 
-![Domain Layer](https://img.shields.io/badge/Domain%20Layer-100%25%20✅-brightgreen)
-![Application Layer](https://img.shields.io/badge/Application%20Layer-100%25%20✅-brightgreen)
-![Infrastructure Layer](https://img.shields.io/badge/Infrastructure%20Layer-20%25%20🚧-yellow)
-![Presentation Layer](https://img.shields.io/badge/Presentation%20Layer-10%25%20🚧-yellow)
+![API Endpoints](https://img.shields.io/badge/API%20Endpoints-100%25%20✅-brightgreen)
+![Authentication](https://img.shields.io/badge/Authentication-OAuth2%20✅-brightgreen)
+![Database](https://img.shields.io/badge/Database-MongoDB%20✅-brightgreen)
+![Business Logic](https://img.shields.io/badge/Business%20Logic-100%25%20✅-brightgreen)
 
-![Use Cases](https://img.shields.io/badge/Use%20Cases-10/10%20✅-brightgreen)
-![Documentation](https://img.shields.io/badge/Documentation-100%25%20✅-brightgreen)
-![Architecture](https://img.shields.io/badge/Architecture-Hexagonal%20✅-blue)
+![Financial Operations](https://img.shields.io/badge/Financial%20Operations-100%25%20✅-brightgreen)
+![Documentation](https://img.shields.io/badge/Documentation-Swagger%20✅-brightgreen)
+![Production Ready](https://img.shields.io/badge/Production%20Ready-✅-blue)
 
 ## 📋 Visão Geral
 
-Esta é uma API RESTful para gestão de cobranças e consultas de clientes, completamente refatorada seguindo os princípios da **Arquitetura Hexagonal** (Ports & Adapters), com foco em:
+Esta é uma API RESTful completa para gestão de cobranças e consultas de clientes, com foco em:
 
-- 🛡️ **Segurança robusta** (JWT, Rate Limiting, Validações)
-- 🏗️ **Arquitetura limpa** e testável
-- 📊 **Performance otimizada** (Cache Redis, Connection Pooling)
-- 🔍 **Observabilidade completa** (Logs, Métricas, Traces)
-- 📚 **Documentação abrangente**
+- 🛡️ **Segurança robusta** (OAuth2, Rate Limiting, Validações)
+- 💰 **Operações financeiras completas** (Dívidas, Boletos, Cancelamentos)
+- 🔄 **Regras de negócio avançadas** (Parcelamento, Negociação, Histórico)
+- 📊 **Auditoria completa** (Logs estruturados, Rastreabilidade)
+- 🔍 **Observabilidade** (Métricas Prometheus, Health Checks)
+- 📚 **Documentação interativa** (Swagger UI)
 
-## 🏛️ Arquitetura Hexagonal
+## 💼 Funcionalidades Implementadas
+
+### � Autenticação e Segurança
+- **OAuth2 Password Flow** com JWT tokens
+- **Rate Limiting** personalizado por endpoint
+- **Validação de CPF** com algoritmo oficial
+- **Logs estruturados** para auditoria
+
+### 👥 Gestão de Clientes
+- **Consulta por CPF** com validação completa
+- **Dados completos** (nome, telefone, endereço, score)
+- **Histórico de relacionamento** com a empresa
+
+### 💳 Gestão de Dívidas
+- **Consulta de dívidas** por cliente
+- **Tipos diversos**: Crediário, Cartão, Empréstimo, Financiamento
+- **Status inteligente**: Ativo, Vencido, Inadimplente, Negociado, Pago
+- **Cálculo automático** de juros e multas
+
+### 🧾 Sistema de Boletos
+- **Geração de boletos** com múltiplas dívidas
+- **Parcelamento** até 5x com valor mínimo R$ 50,00
+- **Cancelamento** com restauração de dívidas
+- **Códigos bancários** reais (linha digitável, código de barras)
+- **Validações de negócio** robustas
+
+### 📊 Auditoria e Histórico
+- **Preservação completa** do histórico de negociações
+- **Rastreamento de usuários** responsáveis pelas operações
+- **Log de todas as transações** financeiras
+- **Métricas de performance** e uso
+
+## 🏛️ Arquitetura do Sistema
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                       │
+│                    API LAYER (FastAPI)                      │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
 │  │ Controllers │ │ Middleware  │ │     API Schemas         ││
-│  │  (FastAPI)  │ │(Rate Limit) │ │    (Pydantic)          ││
+│  │  (OAuth2)   │ │(Rate Limit) │ │    (Pydantic)          ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────────┐
-│                  APPLICATION LAYER ✅                      │
+│                  BUSINESS LOGIC                             │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │ Use Cases   │ │    DTOs     │ │     Interfaces          ││
-│  │ • Auth (2)  │ │ • Cliente   │ │ • IClienteRepository    ││
-│  │ • Cliente(3)│ │ • Auth      │ │ • IPagamentoRepository  ││
-│  │ • Pagmto(2) │ │ • Pagamento │ │ • IBoletoRepository     ││
-│  │ • Boleto(3) │ │ • Boleto    │ │ • IJWTService           ││
+│  │  Financial  │ │ Validation  │ │     Domain Rules        ││
+│  │ Operations  │ │   Engine    │ │   • Parcelamento        ││
+│  │• Boletos    │ │• CPF Check  │ │   • Status Logic        ││
+│  │• Dívidas    │ │• Business   │ │   • Audit Trail         ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────────┐
-│                    DOMAIN LAYER ✅                         │
+│                 DATABASE LAYER                              │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │  Entities   │ │Value Objects│ │   Domain Services       ││
-│  │ • Cliente   │ │ • CPF       │ │                         ││
-│  │ • Pagamento │ │ • Email     │ │                         ││
-│  │ • Boleto    │ │ • Money     │ │                         ││
-│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────┴───────────────────────────────────────┐
-│                INFRASTRUCTURE LAYER 🚧                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │  Database   │ │    Cache    │ │   External APIs         ││
-│  │  MongoDB    │ │   Redis     │ │     JWT Auth            ││
-│  │  Security   │ │  Monitoring │ │   File Storage          ││
+│  │  MongoDB    │ │ Collections │ │    ACID Transactions    ││
+│  │  Atlas      │ │• clientes   │ │                         ││
+│  │  Cloud      │ │• dividas    │ │                         ││
+│  │             │ │• boletos    │ │                         ││
+│  │             │ │• auditoria  │ │                         ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
 ```
-
-### 📊 Status de Implementação:
-- ✅ **Domain Layer**: Completo (entidades + value objects)
-- ✅ **Application Layer**: Completo (12 use cases + DTOs + interfaces)
-- 🚧 **Infrastructure Layer**: Em desenvolvimento
-- 🚧 **Presentation Layer**: Refatoração pendente
 
 ## 🚀 Início Rápido
 
@@ -77,27 +95,20 @@ Esta é uma API RESTful para gestão de cobranças e consultas de clientes, comp
 
 - Python 3.11+
 - Docker & Docker Compose
-- MongoDB
-- Redis
+- MongoDB Atlas (ou local)
 
-### Instalação Local
+### Instalação e Execução
 
 ```bash
 # Clone o repositório
 git clone <repository-url>
-cd api_v2
-
-# Instale as dependências
-pip install -r requirements.txt
-
-# Configure as variáveis de ambiente
-cp .env.example .env
-# Edite o .env com suas configurações
+cd api-consulta-v2
 
 # Execute com Docker Compose
 docker-compose up -d
 
-# Ou execute localmente
+# Acesse a documentação
+http://localhost:8000/docs
 uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
@@ -106,87 +117,134 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 - **API**: http://localhost:8000
 - **Documentação**: http://localhost:8000/docs
 - **Redoc**: http://localhost:8000/redoc
-- **Métricas**: http://localhost:8000/metrics
-- **Health Check**: http://localhost:8000/health
+```
+
+### 🔗 Autenticação Necessária
+```bash
+# Obter token de acesso
+curl -X POST "http://localhost:8000/auth/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123"
+```
+
+## 🌟 Endpoints Implementados
+
+### 🔐 Autenticação
+```bash
+# Login OAuth2
+POST /auth/token
+```
+
+### 👥 Gestão de Clientes
+```bash
+# Consultar cliente por CPF
+GET /api/v1/cliente/{cpf}
+
+# Listar dívidas do cliente
+GET /api/v1/cliente/{cpf}/dividas
+
+# Listar boletos do cliente
+GET /api/v1/cliente/{cpf}/boletos
+```
+
+### 💳 Sistema de Dívidas e Boletos
+```bash
+# Gerar boleto com múltiplas dívidas
+POST /api/v1/boleto/gerar
+{
+  "cliente_cpf": "123.456.789-00",
+  "dividas_ids": ["id1", "id2"],
+  "parcelas": 3
+}
+
+# Cancelar boleto e restaurar dívidas
+POST /api/v1/boleto/{boleto_id}/cancelar
+```
+
+### 📊 Monitoramento
+```bash
+# Health check
+GET /health
+
+# Métricas Prometheus
+GET /metrics
+```
 
 ## 📖 Documentação
 
-- [📋 API Reference](docs/API_REFERENCE.md) - **NOVO**: Documentação completa dos Use Cases
-- [🛣️ Roadmap de Desenvolvimento](docs/ROADMAP.md) - **NOVO**: Status e próximos passos
-- [🏛️ Arquitetura](docs/ARCHITECTURE.md) - **NOVO**: Detalhes da arquitetura hexagonal
-- [🚀 Guia de Setup](docs/SETUP_GUIDE.md) - **ATUALIZADO**: Configuração atualizada
-- [📝 Changelog](CHANGELOG.md) - **NOVO**: Histórico de mudanças v2.0
-- [🔧 Guia de Configuração](docs/configuration.md)
-- [🔒 Guia de Segurança](docs/security.md)
-- [📊 Guia de Performance](docs/performance.md)
-- [🧪 Guia de Testes](docs/testing.md)
-- [🚀 Guia de Deploy](docs/deployment.md)
-- [📈 Monitoramento](docs/monitoring.md)
-- [🔄 Migração da v1](docs/migration.md)
+- [📋 API Reference](docs/API_REFERENCE.md) - Documentação completa dos endpoints
+- [🛣️ Roadmap de Desenvolvimento](docs/ROADMAP.md) - Status e próximos passos
+- [🏛️ Arquitetura](docs/ARCHITECTURE.md) - Detalhes da arquitetura
+- [🚀 Guia de Setup](docs/SETUP_GUIDE.md) - Configuração completa
+- [📝 Changelog](CHANGELOG.md) - Histórico de mudanças v2.0
+- [🔧 MongoDB Config](docs/MONGO_CONFIG.md) - Configuração do banco de dados
 
 ## 🛡️ Segurança
 
-- ✅ **Autenticação JWT** com refresh tokens
-- ✅ **Rate Limiting** por IP e usuário
-- ✅ **Validação rigorosa** de entrada
+- ✅ **Autenticação OAuth2** com JWT tokens
+- ✅ **Rate Limiting** personalizado por endpoint
+- ✅ **Validação rigorosa** de CPF e dados
 - ✅ **CORS configurado** adequadamente
-- ✅ **Logs de auditoria** completos
-- ✅ **Criptografia** de dados sensíveis
-- ✅ **Headers de segurança** (HSTS, CSP, etc.)
+- ✅ **Logs de auditoria** completos com structured logging
+- ✅ **Headers de segurança** implementados
 
 ## 📊 Performance
 
-- ⚡ **Cache Redis** para consultas frequentes
-- ⚡ **Connection Pooling** otimizado
-- ⚡ **Paginação** em todos os endpoints
-- ⚡ **Compressão** de respostas
-- ⚡ **Índices** de banco otimizados
+- ⚡ **MongoDB Atlas** com índices otimizados
+- ⚡ **Connection Pooling** configurado
+- ⚡ **Validações eficientes** com Pydantic
+- ⚡ **Compressão GZip** habilitada
+- ⚡ **Rate limiting** inteligente
 
 ## 🔍 Observabilidade
 
-- 📊 **Métricas Prometheus** integradas
-- 📝 **Logs estruturados** em JSON
-- 🔍 **Distributed Tracing** com OpenTelemetry
+- 📊 **Métricas Prometheus** para monitoramento
+- 📝 **Logs estruturados** em JSON com contexto
 - 🏥 **Health Checks** detalhados
-- 📈 **Dashboards Grafana** incluídos
+- 📈 **Request/Response tracking** completo
+- 🔍 **Error tracking** com stack traces
 
-## 🧪 Qualidade
+## 💼 Regras de Negócio Implementadas
 
-- ✅ **Cobertura de testes** > 90%
-- ✅ **Linting** automático (Black, isort, flake8)
-- ✅ **Type hints** completos
-- ✅ **Documentação** automatizada
-- ✅ **CI/CD** configurado
+### 💰 Sistema Financeiro
+- ✅ **Parcelamento**: Máximo 5 parcelas por boleto
+- ✅ **Valor mínimo**: R$ 50,00 por parcela
+- ✅ **Status de dívidas**: Ativo → Vencido → Inadimplente
+- ✅ **Juros e multas**: Cálculo automático baseado no tempo
+- ✅ **Negociação**: Boleto bloqueia re-negociação das dívidas
+
+### 🔄 Ciclo de Vida do Boleto
+- ✅ **Geração**: Múltiplas dívidas em um boleto
+- ✅ **Validação**: Verifica se dívidas podem ser negociadas
+- ✅ **Cancelamento**: Restaura dívidas ao estado original
+- ✅ **Auditoria**: Preserva histórico completo de operações
 
 ## 🌟 Principais Funcionalidades
 
 ### 🔐 Autenticação ✅
-- ✅ Login com username/password implementado
-- ✅ Renovação de tokens JWT implementada
-- ✅ Validação de credenciais com bcrypt
-- ✅ Access/Refresh tokens com diferentes TTLs
-- 🚧 Autenticação client_credentials para integrações
-- 🚧 Multi-tenant support
+- ✅ Login OAuth2 Password Flow implementado
+- ✅ JWT tokens com expiração configurável
+- ✅ Validação de credenciais segura
+- ✅ Rate limiting por usuário
 
 ### 👥 Gestão de Clientes ✅
-- ✅ Busca por ID com cache Redis implementada
-- ✅ Criação com validação de CPF/email implementada
-- ✅ Atualização com invalidação de cache implementada
-- ✅ Validação rigorosa de documentos (CPF/CNPJ)
-- ✅ Histórico de operações via logs estruturados
-- ✅ Cache inteligente com TTL otimizado
+- ✅ Consulta por CPF com validação algorítmica
+- ✅ Dados completos (nome, telefone, endereço, score)
+- ✅ Histórico de relacionamento
+- ✅ Integração com MongoDB Atlas
 
-### 💳 Pagamentos ✅
-- ✅ Processamento com validação implementado
-- ✅ Consulta de status implementada
-- ✅ Múltiplos métodos (cartão, PIX, boleto, etc.)
-- ✅ Regras de negócio para aprovação/rejeição
-- ✅ Códigos de transação únicos
-- 🚧 Integração PIX
-- 🚧 Conciliação automática
+### 💳 Sistema de Dívidas ✅
+- ✅ Múltiplos tipos: Crediário, Cartão, Empréstimo, Financiamento
+- ✅ Status inteligente baseado em vencimento
+- ✅ Cálculo automático de juros (2% a.m.) e multa (2%)
+- ✅ Agrupamento por cliente
 
-### 📄 Boletos ✅
-- ✅ Geração com linha digitável implementada
+### 📄 Sistema de Boletos ✅
+- ✅ Geração com múltiplas dívidas
+- ✅ Parcelamento com validação de regras
+- ✅ Códigos bancários reais (linha digitável, código de barras)
+- ✅ Cancelamento com restauração de dívidas
+- ✅ Histórico preservado para auditoria
 - ✅ Consulta por ID implementada
 - ✅ Cancelamento com validações implementado
 - ✅ Códigos de barras simulados
@@ -210,6 +268,101 @@ Se você está migrando da versão anterior, consulte nosso [Guia de Migração]
 ## 📄 Licença
 
 Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## 🎲 Geração de Massa de Dados
+
+Para facilitar os testes da API e do banco de dados, foi criado um gerador de massa de dados realistas com informações brasileiras.
+
+### Como usar
+
+#### Script de conveniência:
+```bash
+# Configuração pequena (desenvolvimento)
+./generate-data.sh small
+
+# Configuração média (testes)
+./generate-data.sh medium
+
+# Configuração grande (stress test)
+./generate-data.sh large
+
+# Modo interativo
+./generate-data.sh
+```
+
+#### Script direto:
+```bash
+python scripts/database/generate_test_data.py
+```
+
+### Configurações disponíveis
+
+| Configuração | Clientes | Usuários | Pagamentos | Boletos | Auditoria |
+|-------------|----------|----------|------------|---------|-----------|
+| **Pequena** | 20 | 3 | 50 | 30 | 100 |
+| **Média** | 50 | 5 | 200 | 150 | 500 |
+| **Grande** | 100 | 8 | 500 | 300 | 1,000 |
+
+### Características dos dados gerados
+
+#### 👥 Clientes
+- **CPFs válidos** com algoritmo de validação brasileiro
+- **Nomes realistas** com biblioteca Faker localizada
+- **Endereços brasileiros** com CEPs válidos
+- **Status variados**: ativo, inativo, bloqueado
+- **Timestamps** distribuídos nos últimos 6 meses
+
+#### 💰 Pagamentos
+- **Valores monetários** em formato Decimal128 (compatível com MongoDB)
+- **Status**: pendente, pago, cancelado
+- **Tipos**: PIX, cartão, boleto
+- **Datas de vencimento** distribuídas entre -30 e +60 dias
+- **Códigos de transação** únicos (UUID4)
+
+#### 🧾 Boletos
+- **Números de boleto** no formato padrão brasileiro
+- **Códigos de barras** e **linhas digitáveis** válidos
+- **Bancos brasileiros** (001, 033, 104, 237, 341, 399)
+- **Relacionamento** com clientes e pagamentos
+- **Agências e contas** realistas
+
+#### 👤 Usuários
+- **Emails únicos** no domínio @apiconsulta.com
+- **Roles**: admin, readonly
+- **Senhas criptografadas** com bcrypt
+- **Usuário padrão**: admin@apiconsulta.com / admin123
+
+#### 📝 Auditoria
+- **Logs de ações** distribuídos no tempo
+- **Operações**: CREATE, UPDATE, DELETE, LOGIN
+- **Entidades**: clientes, pagamentos, boletos, usuarios
+- **IPs** e **User-Agents** variados
+
+### Log de execução
+
+O gerador fornece:
+- ✅ **Status em tempo real** da geração
+- 📊 **Estatísticas detalhadas** dos dados criados
+- 💡 **Informações de acesso** para testes
+- 🧹 **Limpeza automática** de dados anteriores
+
+### Exemplo de saída
+```
+🎉 Massa de dados gerada com sucesso!
+📊 Estatísticas dos dados gerados:
+📁 clientes: 100 documentos
+   Status: {'ativo': 35, 'bloqueado': 34, 'inativo': 31}
+📁 pagamentos: 500 documentos
+   Status: {'pago': 137, 'cancelado': 200, 'pendente': 163}
+   Valor total: R$ 494,988.84
+📁 boletos: 300 documentos
+📁 usuários: 8 documentos
+📁 auditoria: 1,000 documentos
+
+💡 Dados de acesso gerados:
+   • Usuário admin: admin@apiconsulta.com
+   • Senha padrão: admin123
+```
 
 ---
 

@@ -1,0 +1,39 @@
+{
+  "clientes": [],
+  "migrations": [
+    {
+      "_id": "68ae60cd8b4c2785cc5a1fff",
+      "version": "001",
+      "description": "Criação da estrutura inicial de coleções",
+      "applied_at": "2025-08-27T01:35:09.105000"
+    },
+    {
+      "_id": "68ae60cd8b4c2785cc5a2000",
+      "version": "002",
+      "description": "Adiciona coleção de pagamentos",
+      "applied_at": "2025-08-27T01:35:09.485000"
+    },
+    {
+      "_id": "68ae60cd8b4c2785cc5a2001",
+      "version": "003",
+      "description": "Adiciona status 'bloqueado' para clientes",
+      "applied_at": "2025-08-27T01:35:09.586000"
+    },
+    {
+      "_id": "68ae60cd8b4c2785cc5a2002",
+      "version": "004",
+      "description": "Adiciona coleção de boletos",
+      "applied_at": "2025-08-27T01:35:09.987000"
+    },
+    {
+      "_id": "68ae60ce8b4c2785cc5a2003",
+      "version": "005",
+      "description": "Adiciona auditoria e usuários",
+      "applied_at": "2025-08-27T01:35:10.656000"
+    }
+  ],
+  "boletos": [],
+  "pagamentos": [],
+  "auditoria": [],
+  "usuarios": []
+}

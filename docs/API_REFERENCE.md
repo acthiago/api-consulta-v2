@@ -1,4 +1,178 @@
-# 📖 API Reference - v2.0
+# 📖 API Reference - v2.1
+
+## 🎯 Sistema Completo de Gestão Financeira
+
+### 🌟 Endpoints Implementados e Funcionais
+
+#### 🔐 **Autenticação**
+```http
+POST /auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=admin123
+```
+
+**Resposta**:
+```json
+{
+  "access_token": "jwt_token_example_admin",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "message": "Login realizado com sucesso"
+}
+```
+
+#### 👥 **Gestão de Clientes**
+
+##### Consultar Cliente por CPF
+```http
+GET /api/v1/cliente/{cpf}
+Authorization: Bearer {token}
+```
+
+**Exemplo**:
+```bash
+GET /api/v1/cliente/654.235.116-74
+```
+
+**Resposta**:
+```json
+{
+  "cpf": "654.235.116-74",
+  "nome": "Srta. Elisa Martins",
+  "telefone": "(45) 98765-4321",
+  "endereco": "Rua das Flores, 123",
+  "score_credito": 650,
+  "message": "Cliente encontrado com sucesso"
+}
+```
+
+##### Listar Dívidas do Cliente
+```http
+GET /api/v1/cliente/{cpf}/dividas
+Authorization: Bearer {token}
+```
+
+**Resposta**:
+```json
+{
+  "cliente_cpf": "654.235.116-74",
+  "cliente_nome": "Srta. Elisa Martins",
+  "total_dividas": 3,
+  "valor_total_original": 9443.96,
+  "valor_total_atual": 9898.61,
+  "dividas_ativas": 0,
+  "dividas_vencidas": 3,
+  "dividas": [
+    {
+      "id": "68ae745b62c4c9bfff79f166",
+      "tipo": "crediario",
+      "descricao": "Crediário - Srta. Elisa Martins",
+      "valor_original": 4486.45,
+      "valor_atual": 4668.90,
+      "data_vencimento": "2025-07-27 02:58:35",
+      "dias_atraso": 31,
+      "status": "inadimplente",
+      "juros_mes": 0.02,
+      "multa": 0.02
+    }
+  ]
+}
+```
+
+##### Listar Boletos do Cliente
+```http
+GET /api/v1/cliente/{cpf}/boletos
+Authorization: Bearer {token}
+```
+
+#### 💰 **Sistema de Boletos**
+
+##### Gerar Boleto com Múltiplas Dívidas
+```http
+POST /api/v1/boleto/gerar
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "cliente_cpf": "654.235.116-74",
+  "dividas_ids": ["68ae745b62c4c9bfff79f166", "68ae745b62c4c9bfff79f167"],
+  "parcelas": 3
+}
+```
+
+**Resposta**:
+```json
+{
+  "id": "68ae791d87d37033f41816f3",
+  "numero_boleto": "33950.63178 45953.892793 64608.759003 8 61562196404316",
+  "valor_total": 6831.80,
+  "valor_parcela": 2277.27,
+  "parcelas": 3,
+  "data_vencimento": "2025-09-03 03:18:53",
+  "linha_digitavel": "54979.93243 51989.225864 37863.536881 7 66282928463187",
+  "codigo_barras": "920596979373858364581543853409561638747964",
+  "banco": "104",
+  "url_pagamento": "https://api.banco.com/boleto/...",
+  "dividas_incluidas": ["68ae745b62c4c9bfff79f166", "68ae745b62c4c9bfff79f167"],
+  "message": "Boleto gerado com sucesso! 3 parcela(s) de R$ 2277.27"
+}
+```
+
+**Regras de Negócio**:
+- ✅ Máximo 5 parcelas por boleto
+- ✅ Valor mínimo R$ 50,00 por parcela
+- ✅ Dívidas devem estar ativas, vencidas ou inadimplentes
+- ✅ Não permite re-negociar dívidas com boleto ativo
+
+##### **🔄 Cancelar Boleto e Restaurar Dívidas** ⭐ NOVO
+```http
+POST /api/v1/boleto/{boleto_id}/cancelar
+Authorization: Bearer {token}
+```
+
+**Exemplo**:
+```bash
+POST /api/v1/boleto/68ae767cf391fdfc1660d088/cancelar
+```
+
+**Resposta**:
+```json
+{
+  "boleto_id": "68ae767cf391fdfc1660d088",
+  "status": "cancelado",
+  "data_cancelamento": "2025-08-27 03:18:11",
+  "dividas_restauradas": ["68ae745b62c4c9bfff79f166", "68ae745b62c4c9bfff79f167"],
+  "historico_preservado": true,
+  "message": "Boleto cancelado com sucesso! 2 dívida(s) restaurada(s) ao estado original."
+}
+```
+
+**Funcionalidades**:
+- ✅ Cancela boleto e atualiza status para "cancelado"
+- ✅ Restaura dívidas ao status original baseado na data de vencimento
+- ✅ Preserva histórico completo na coleção `auditoria`
+- ✅ Permite nova negociação das mesmas dívidas
+- ✅ Usa transações ACID para garantir consistência
+- ✅ Registra usuário responsável pelo cancelamento
+
+**Validações**:
+- ❌ Não permite cancelar boletos já pagos
+- ❌ Não permite cancelar boletos já cancelados
+- ✅ Valida ObjectId do MongoDB
+- ✅ Verifica existência de dívidas associadas
+
+#### 📊 **Monitoramento**
+
+##### Health Check
+```http
+GET /health
+```
+
+##### Métricas Prometheus
+```http
+GET /metrics
+```
 
 ## 🏗️ Arquitetura de Use Cases Implementados
 

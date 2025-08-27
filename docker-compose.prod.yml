@@ -10,7 +10,7 @@ services:
     environment:
       - DEBUG=false
       - LOG_LEVEL=WARNING
-      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017}
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=production
     depends_on:

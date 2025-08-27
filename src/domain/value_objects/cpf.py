@@ -75,3 +75,20 @@ class CPF:
 
     def __repr__(self) -> str:
         return f"CPF('{self.mascarado()}')"
+
+
+def validate_cpf(cpf: str) -> bool:
+    """
+    Valida um CPF usando o algoritmo oficial brasileiro
+    
+    Args:
+        cpf: CPF para validar (com ou sem formatação)
+        
+    Returns:
+        bool: True se válido, False caso contrário
+    """
+    try:
+        cpf_obj = CPF.criar(cpf)
+        return True
+    except ValueError:
+        return False

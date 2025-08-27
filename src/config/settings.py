@@ -13,8 +13,8 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = Field(default="API de Consulta e Cobranças v2")
-    APP_VERSION: str = Field(default="2.0.0")
-    APP_DESCRIPTION: str = Field(default="API com Arquitetura Hexagonal")
+    APP_VERSION: str = Field(default="2.1.0")
+    APP_DESCRIPTION: str = Field(default="Sistema Completo de Gestão Financeira")
     DEBUG: bool = Field(default=False)
     ENVIRONMENT: str = Field(default="production")
 
