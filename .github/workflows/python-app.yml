@@ -198,19 +198,29 @@ jobs:
           echo "🌟 Deploying to production VPS: 69.62.103.163"
           echo "Image: $IMAGE_TAG"
           
+          # Create directory structure on VPS first
+          ssh root@69.62.103.163 << EOF
+            echo "📁 Creating project structure..."
+            mkdir -p /opt/api-consulta-v2/logs
+            mkdir -p /opt/api-consulta-v2/storage
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/dashboards
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/datasources
+          EOF
+          
           # Transfer necessary files to VPS
+          echo "📤 Transferring configuration files..."
           scp -r docker-compose.vps.yml Makefile nginx.vps.conf root@69.62.103.163:/opt/api-consulta-v2/
           scp -r monitoring/ root@69.62.103.163:/opt/api-consulta-v2/
           
           # Connect to VPS and deploy using Make
+          echo "🚀 Starting deployment..."
           ssh root@69.62.103.163 << EOF
             export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
             export MONGO_URI="$MONGO_URI"
             export SECRET_KEY="$SECRET_KEY"
             
-            echo "📁 Setting up project directory..."
+            echo "📁 Preparing deployment..."
             cd /opt/api-consulta-v2
-            mkdir -p logs storage monitoring/grafana/dashboards monitoring/grafana/datasources
             
             echo "🚀 Deploying using Make..."
             make docker-vps
