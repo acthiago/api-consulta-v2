@@ -207,6 +207,12 @@ jobs:
             mkdir -p /opt/api-consulta-v2/monitoring/grafana/dashboards
             mkdir -p /opt/api-consulta-v2/monitoring/grafana/datasources
             
+            # Remove any existing prometheus.yml directory (corrupted state)
+            if [ -d "/opt/api-consulta-v2/monitoring/prometheus.yml" ]; then
+              echo "⚠️ Removing corrupted prometheus.yml directory..."
+              rm -rf /opt/api-consulta-v2/monitoring/prometheus.yml
+            fi
+            
             # Set permissions
             chmod -R 755 /opt/api-consulta-v2
             
