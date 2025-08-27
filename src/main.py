@@ -92,7 +92,8 @@ class ClienteResponse(BaseModel):
 
 class DividaResponse(BaseModel):
     id: str
-    tipo: str  # "emprestimo", "cartao_credito", "cheque_especial", "financiamento", "outros"
+    # "emprestimo", "cartao_credito", "cheque_especial", "financiamento", "outros"
+    tipo: str
     descricao: str
     valor_original: float
     valor_atual: float  # Com juros, multas, etc.
@@ -589,7 +590,8 @@ async def consultar_dividas_cliente(
     Consulta todas as dívidas de um cliente por CPF
 
     - **cpf**: CPF do cliente (com ou sem formatação)
-    - **Retorna**: Lista completa das dívidas do cliente com tipos como empréstimos, cartão de crédito, cheque especial, etc.
+    - **Retorna**: Lista completa das dívidas do cliente com tipos como
+      empréstimos, cartão de crédito, cheque especial, etc.
     """
     try:
         # Valida o CPF
@@ -743,9 +745,11 @@ async def consultar_boletos_cliente(
             else:
                 valor = float(valor)
 
+            numero_boleto = boleto.get("numero_boleto", "")
+
             boleto_response = BoletoResponse(
                 id=str(boleto["_id"]),
-                numero_boleto=boleto.get("numero_boleto", ""),
+                numero_boleto=numero_boleto,
                 divida_id=str(boleto.get("divida_id", "")) if boleto.get(
                     "divida_id") else None,
                 valor=valor,
@@ -755,7 +759,7 @@ async def consultar_boletos_cliente(
                 codigo_barras=boleto.get("codigo_barras", ""),
                 banco=str(boleto.get("banco", "")),
                 status=boleto.get("status", "ativo"),
-                url_pagamento=f"https://api.banco.com/boleto/{boleto.get('numero_boleto', '')}"
+                url_pagamento=f"https://api.banco.com/boleto/{numero_boleto}"
             )
             boletos_formatados.append(boleto_response)
 
@@ -891,9 +895,9 @@ async def gerar_boleto(
         if valor_parcela < 50.0:
             max_parcelas = int(valor_total / 50.0)
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=(f"Valor da parcela (R$ {valor_parcela:.2f}) é menor que "
-                       f"R$ 50,00. Máximo de {max_parcelas} parcelas para este valor")
+                        f"R$ 50,00. Máximo de {max_parcelas} parcelas para este valor")
             )
 
         # Gera dados do boleto
@@ -908,9 +912,9 @@ async def gerar_boleto(
         p6 = random.randint(100000, 999999)
         dv = random.randint(1, 9)
         codigo = random.randint(10000000000000, 99999999999999)
-        
+
         numero_boleto = f"{p1}.{p2} {p3}.{p4} {p5}.{p6} {dv} {codigo}"
-        
+
         # Gera linha digitável
         ld1 = random.randint(10000, 99999)
         ld2 = random.randint(10000, 99999)
@@ -920,17 +924,19 @@ async def gerar_boleto(
         ld6 = random.randint(100000, 999999)
         ld_dv = random.randint(1, 9)
         ld_codigo = random.randint(10000000000000, 99999999999999)
-        
+
         linha_digitavel = f"{ld1}.{ld2} {ld3}.{ld4} {ld5}.{ld6} {ld_dv} {ld_codigo}"
-        
+
         # Gera código de barras (44 dígitos)
-        codigo_barras = f"{random.randint(10000000000000000000000000000000000000000, 99999999999999999999999999999999999999999):044d}"
-        
+        cb_min = 10000000000000000000000000000000000000000
+        cb_max = 99999999999999999999999999999999999999999
+        codigo_barras = f"{random.randint(cb_min, cb_max):044d}"
+
         banco = random.choice(["001", "033", "104", "237", "341", "399"])
 
         # Importa timedelta localmente
-        data_vencimento = (datetime.now() + 
-                          datetime.timedelta(days=7))  # 7 dias
+        data_vencimento = (datetime.now() +
+                           datetime.timedelta(days=7))  # 7 dias
 
         # Cria o boleto no banco
         from bson.decimal128 import Decimal128
@@ -972,6 +978,9 @@ async def gerar_boleto(
             }
         )
 
+        numero_boleto_clean = numero_boleto.replace(' ', '')
+        parcelas_info = f"{request.parcelas} parcela(s) de R$ {valor_parcela:.2f}"
+
         return BoletoGeradoResponse(
             id=str(resultado.inserted_id),
             numero_boleto=numero_boleto,
@@ -982,9 +991,9 @@ async def gerar_boleto(
             linha_digitavel=linha_digitavel,
             codigo_barras=codigo_barras,
             banco=banco,
-            url_pagamento=f"https://api.banco.com/boleto/{numero_boleto.replace(' ', '')}",
+            url_pagamento=f"https://api.banco.com/boleto/{numero_boleto_clean}",
             dividas_incluidas=request.dividas_ids,
-            message=f"Boleto gerado com sucesso! {request.parcelas} parcela(s) de R$ {valor_parcela:.2f}"
+            message=f"Boleto gerado com sucesso! {parcelas_info}"
         )
 
     except HTTPException:
@@ -1032,9 +1041,10 @@ async def cancelar_boleto(
 
         # Verifica se o boleto pode ser cancelado
         if boleto.get("status") in ["pago", "cancelado"]:
+            status_boleto = boleto.get('status')
             raise HTTPException(
                 status_code=400,
-                detail=f"Boleto não pode ser cancelado. Status atual: {boleto.get('status')}"
+                detail=f"Boleto não pode ser cancelado. Status atual: {status_boleto}"
             )
 
         # Busca as dívidas associadas ao boleto
@@ -1130,14 +1140,22 @@ async def cancelar_boleto(
             usuario=current_user.get("username")
         )
 
+        num_dividas = len(dividas_restauradas)
+
+        msg_cancelamento = (
+            f"Boleto cancelado com sucesso! {num_dividas} "
+            f"dívida(s) restaurada(s) ao estado original."
+        )
+        mensagem_sucesso = msg_cancelamento
+
         return BoletoCanceladoResponse(
             boleto_id=boleto_id,
             status="cancelado",
             data_cancelamento=data_cancelamento.strftime("%Y-%m-%d %H:%M:%S"),
             dividas_restauradas=dividas_restauradas,
             historico_preservado=True,
-            message=f"Boleto cancelado com sucesso! {
-                len(dividas_restauradas)} dívida(s) restaurada(s) ao estado original.")
+            message=mensagem_sucesso
+        )
 
     except HTTPException:
         raise
@@ -1155,7 +1173,10 @@ async def cancelar_boleto(
           summary="OAuth2 Login",
           description="Endpoint de autenticação OAuth2 Password Flow",
           responses={
-              200: {"model": TokenResponse, "description": "Login realizado com sucesso"},
+              200: {
+                  "model": TokenResponse,
+                  "description": "Login realizado com sucesso"
+              },
               400: {"model": ErrorResponse, "description": "Credenciais inválidas"},
               429: {"model": ErrorResponse, "description": "Rate limit excedido"}
           })
