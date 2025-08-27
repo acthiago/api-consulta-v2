@@ -169,17 +169,60 @@ jobs:
 
   # ===== JOB 5: DEPLOY TO PRODUCTION =====
   deploy-production:
-    name: 🌟 Deploy to Production
+    name: 🌟 Deploy to Production VPS
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
     
     steps:
-      - name: 🌟 Deploy to production
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Setup SSH connection
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: 📋 Add VPS to known hosts
         run: |
-          echo "🌟 Deploying to production environment..."
-          echo "Image: ${{ needs.build-and-push.outputs.image-tag }}"
-          # Aqui você adicionaria os comandos específicos para deploy de produção
+          ssh-keyscan -H 69.62.103.163 >> ~/.ssh/known_hosts
+
+      - name: 🌟 Deploy to Production VPS
+        env:
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+        run: |
+          echo "🌟 Deploying to production VPS: 69.62.103.163"
+          echo "Image: $IMAGE_TAG"
+          
+          # Conecta na VPS e faz deploy
+          ssh root@69.62.103.163 << EOF
+            echo "📦 Stopping existing containers..."
+            cd /opt/api-consulta-v2 && docker compose down || echo "No containers running"
+            
+            echo "🔄 Pulling latest image..."
+            docker pull $DOCKER_USERNAME/poc-api-consulta-v2:latest
+            
+            echo "📁 Ensuring project directory exists..."
+            mkdir -p /opt/api-consulta-v2/logs /opt/api-consulta-v2/storage
+            
+            echo "🚀 Starting new containers..."
+            cd /opt/api-consulta-v2
+            docker compose up -d
+            
+            echo "🏥 Health check..."
+            sleep 15
+            curl -f http://localhost:8000/health || exit 1
+            
+            echo "✅ Deployment successful!"
+          EOF
+
+      - name: 🏥 Final health check
+        run: |
+          echo "🏥 Checking API health..."
+          sleep 5
+          curl -f http://69.62.103.163:8000/health
+          echo "✅ API is healthy and accessible!"
 
 
