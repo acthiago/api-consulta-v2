@@ -44,10 +44,10 @@ docker-vps:
 	@echo "🔍 Verificando status dos serviços..."
 	$(DOCKER_COMPOSE) -f docker-compose.vps.yml ps
 	@echo "✅ Deploy concluído! Stack completo com Traefik Gateway:"
-	@echo "   🚀 API: http://69.62.103.163/api/docs"
-	@echo "   📊 Grafana: http://69.62.103.163/grafana (admin/admin123)"
-	@echo "   📈 Prometheus: http://69.62.103.163/prometheus"
-	@echo "   🌐 Traefik Dashboard: http://69.62.103.163:8080"
+	@echo "   🚀 API: https://api.thiagoac.com"
+	@echo "   📊 Grafana: https://monitor.thiagoac.com (admin/admin123)"
+	@echo "   📈 Prometheus: https://monitor.thiagoac.com/prometheus"
+	@echo "   🌐 Traefik Dashboard: https://gateway.thiagoac.com"
 	@echo "   📋 Redis: Disponível internamente na rede"
 
 docker-stop:

@@ -47,17 +47,14 @@ services:
     labels:
       # Traefik auto-discovery
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`69.62.103.163`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.rule=Host(`api.thiagoac.com`)"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
-      
-      # Middleware para remover /api prefix
-      - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
-      - "traefik.http.routers.api.middlewares=api-stripprefix"
       
       # Rate limiting
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=100"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.average=10"
+      - "traefik.http.routers.api.middlewares=api-ratelimit"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -98,8 +95,8 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
-      - '--web.route-prefix=/'
-      - '--web.external-url=http://69.62.103.163/prometheus'
+      - '--web.route-prefix=/prometheus'
+      - '--web.external-url=https://monitor.thiagoac.com/prometheus'
     networks:
       - monitoring_network
     depends_on:
@@ -107,7 +104,7 @@ services:
     labels:
       # Traefik auto-discovery
       - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`69.62.103.163`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus.rule=Host(`monitor.thiagoac.com`) && PathPrefix(`/prometheus`)"
       - "traefik.http.routers.prometheus.entrypoints=web"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
 
@@ -118,8 +115,7 @@ services:
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_SERVER_ROOT_URL=http://69.62.103.163/grafana
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SERVER_ROOT_URL=https://monitor.thiagoac.com
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
@@ -132,7 +128,7 @@ services:
     labels:
       # Traefik auto-discovery  
       - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`69.62.103.163`) && PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.rule=Host(`monitor.thiagoac.com`)"
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
@@ -175,7 +171,7 @@ services:
       - monitoring_network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`69.62.103.163`) && PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.traefik.rule=Host(`gateway.thiagoac.com`)"
       - "traefik.http.routers.traefik.service=api@internal"
     healthcheck:
       test: ["CMD", "traefik", "healthcheck"]
