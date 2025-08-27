@@ -879,8 +879,10 @@ async def gerar_boleto(
         if dividas_nao_negociaveis:
             raise HTTPException(
                 status_code=400,
-                detail=f"Dívidas não podem ser negociadas (já pagas ou com boleto ativo): {
-                    ', '.join(dividas_nao_negociaveis)}")
+                detail=(f"Dívidas não podem ser negociadas "
+                        f"(já pagas ou com boleto ativo): "
+                        f"{', '.join(dividas_nao_negociaveis)}")
+            )
 
         # Calcula valor da parcela
         valor_parcela = valor_total / request.parcelas
@@ -894,7 +896,6 @@ async def gerar_boleto(
 
         # Gera dados do boleto
         import random
-        from datetime import datetime, timedelta
 
         numero_boleto = f"{
             random.randint(
@@ -954,7 +955,7 @@ async def gerar_boleto(
 
         # Importa timedelta localmente
         data_vencimento = (datetime.now() + 
-                          datetime.timedelta(days=7))  # 7 dias para vencimento
+                          datetime.timedelta(days=7))  # 7 dias
 
         # Cria o boleto no banco
         from bson.decimal128 import Decimal128
