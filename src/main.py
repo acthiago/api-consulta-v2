@@ -891,66 +891,41 @@ async def gerar_boleto(
         if valor_parcela < 50.0:
             max_parcelas = int(valor_total / 50.0)
             raise HTTPException(
-                status_code=400, detail=f"Valor da parcela (R$ {
-                    valor_parcela:.2f}) é menor que R$ 50,00. Máximo de {max_parcelas} parcelas para este valor")
+                status_code=400, 
+                detail=(f"Valor da parcela (R$ {valor_parcela:.2f}) é menor que "
+                       f"R$ 50,00. Máximo de {max_parcelas} parcelas para este valor")
+            )
 
         # Gera dados do boleto
         import random
 
-        numero_boleto = f"{
-            random.randint(
-                10000,
-                99999)}.{
-            random.randint(
-                10000,
-                99999)} {
-                    random.randint(
-                        10000,
-                        99999)}.{
-                            random.randint(
-                                100000,
-                                999999)} {
-                                    random.randint(
-                                        10000,
-                                        99999)}.{
-                                            random.randint(
-                                                100000,
-                                                999999)} {
-                                                    random.randint(
-                                                        1,
-                                                        9)} {
-                                                            random.randint(
-                                                                10000000000000,
-                                                                99999999999999)}"
-        linha_digitavel = f"{
-            random.randint(
-                10000,
-                99999)}.{
-            random.randint(
-                10000,
-                99999)} {
-                    random.randint(
-                        10000,
-                        99999)}.{
-                            random.randint(
-                                100000,
-                                999999)} {
-                                    random.randint(
-                                        10000,
-                                        99999)}.{
-                                            random.randint(
-                                                100000,
-                                                999999)} {
-                                                    random.randint(
-                                                        1,
-                                                        9)} {
-                                                            random.randint(
-                                                                10000000000000,
-                                                                99999999999999)}"
-        codigo_barras = f"{
-            random.randint(
-                100000000000000000000000000000000000000000,
-                999999999999999999999999999999999999999999)}"
+        # Gera número do boleto de forma mais simples
+        p1 = random.randint(10000, 99999)
+        p2 = random.randint(10000, 99999)
+        p3 = random.randint(10000, 99999)
+        p4 = random.randint(100000, 999999)
+        p5 = random.randint(10000, 99999)
+        p6 = random.randint(100000, 999999)
+        dv = random.randint(1, 9)
+        codigo = random.randint(10000000000000, 99999999999999)
+        
+        numero_boleto = f"{p1}.{p2} {p3}.{p4} {p5}.{p6} {dv} {codigo}"
+        
+        # Gera linha digitável
+        ld1 = random.randint(10000, 99999)
+        ld2 = random.randint(10000, 99999)
+        ld3 = random.randint(10000, 99999)
+        ld4 = random.randint(100000, 999999)
+        ld5 = random.randint(10000, 99999)
+        ld6 = random.randint(100000, 999999)
+        ld_dv = random.randint(1, 9)
+        ld_codigo = random.randint(10000000000000, 99999999999999)
+        
+        linha_digitavel = f"{ld1}.{ld2} {ld3}.{ld4} {ld5}.{ld6} {ld_dv} {ld_codigo}"
+        
+        # Gera código de barras (44 dígitos)
+        codigo_barras = f"{random.randint(10000000000000000000000000000000000000000, 99999999999999999999999999999999999999999):044d}"
+        
         banco = random.choice(["001", "033", "104", "237", "341", "399"])
 
         # Importa timedelta localmente
