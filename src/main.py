@@ -1034,8 +1034,8 @@ async def cancelar_boleto(
         if boleto.get("status") in ["pago", "cancelado"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Boleto não pode ser cancelado. Status atual: {
-                    boleto.get('status')}")
+                detail=f"Boleto não pode ser cancelado. Status atual: {boleto.get('status')}"
+            )
 
         # Busca as dívidas associadas ao boleto
         dividas_associadas = list(db.dividas.find({
