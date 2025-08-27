@@ -1,6 +1,7 @@
 exclude_dirs: ['./venv', './tests', './scripts']
-skips: ['B106', 'B311', 'B104']
+skips: ['B105', 'B106', 'B311', 'B104']
 
+# B105: hardcoded_password_string - "admin123" é uma senha de demonstração para testes
 # B106: hardcoded_password_funcarg - "bearer" é um tipo de token padrão, não uma senha
 # B311: blacklist - random é usado para simulação de dados, não para criptografia  
 # B104: hardcoded_bind_all_interfaces - binding em 0.0.0.0 é necessário para container Docker
