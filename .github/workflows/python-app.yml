@@ -8,7 +8,19 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Enviro          ssh root@69.62.103.163 << EOF
+        description: 'Envir          # Transfer necessary files to VPS
+          scp -r docker-compose.vps.yml Makefile nginx.vps.conf root@69.62.103.163:/opt/api-consulta-v2/
+          scp -r monitoring/ root@69.62.103.163:/opt/api-consulta-v2/
+          
+          # Connect to VPS and deploy using Make
+          ssh root@69.62.103.163 << EOF
+            export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
+            export MONGO_URI="${{ secrets.MONGO_URI }}"
+            export SECRET_KEY="${{ secrets.SECRET_KEY }}"
+            
+            echo "📁 Setting up project directory..."
+            cd /opt/api-consulta-v2
+            mkdir -p logs storage monitoring/grafana/dashboards monitoring/grafana/datasourcessh root@69.62.103.163 << EOF
             export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
             
             echo "📁 Setting up project directory..."to deploy'
@@ -222,7 +234,7 @@ jobs:
         run: |
           echo "🏥 Checking API health..."
           sleep 5
-          curl -f http://69.62.103.163:8000/health
+          curl -f http://69.62.103.163/health
           echo "✅ API is healthy and accessible!"
 
 
