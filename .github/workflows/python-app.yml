@@ -8,7 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy'
+        description: 'Enviro          ssh root@69.62.103.163 << EOF
+            export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
+            
+            echo "📁 Setting up project directory..."to deploy'
         required: true
         default: 'staging'
         type: choice
@@ -196,26 +199,23 @@ jobs:
           echo "🌟 Deploying to production VPS: 69.62.103.163"
           echo "Image: $IMAGE_TAG"
           
-          # Conecta na VPS e faz deploy
+          # Transfer necessary files to VPS
+          scp -r docker-compose.vps.yml Makefile root@69.62.103.163:/opt/api-consulta-v2/
+          
+          # Connect to VPS and deploy using Make
           ssh root@69.62.103.163 << EOF
-            echo "📦 Stopping existing containers..."
-            cd /opt/api-consulta-v2 && docker compose down || echo "No containers running"
+            export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
+            export MONGO_URI="$MONGO_URI"
+            export SECRET_KEY="$SECRET_KEY"
             
-            echo "🔄 Pulling latest image..."
-            docker pull $DOCKER_USERNAME/poc-api-consulta-v2:latest
-            
-            echo "📁 Ensuring project directory exists..."
-            mkdir -p /opt/api-consulta-v2/logs /opt/api-consulta-v2/storage
-            
-            echo "🚀 Starting new containers..."
+            echo "� Setting up project directory..."
             cd /opt/api-consulta-v2
-            docker compose up -d
+            mkdir -p logs storage
             
-            echo "🏥 Health check..."
-            sleep 15
-            curl -f http://localhost:8000/health || exit 1
+            echo "🚀 Deploying using Make..."
+            make docker-vps
             
-            echo "✅ Deployment successful!"
+            echo "✅ Deployment completed successfully!"
           EOF
 
       - name: 🏥 Final health check

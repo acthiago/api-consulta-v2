@@ -1,5 +1,5 @@
 # ===== API Consulta v2 - Makefile =====
-.PHONY: help docker-dev docker-prod docker-stop check-requirements
+.PHONY: help docker-dev docker-prod docker-vps docker-stop check-requirements
 
 # Variables
 DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
@@ -9,7 +9,8 @@ help:
 	@echo "Using Docker Compose: $(DOCKER_COMPOSE)"
 	@echo "  check-requirements - Check system requirements"
 	@echo "  docker-dev         - Start development environment"
-	@echo "  docker-prod        - Start production environment"  
+	@echo "  docker-prod        - Start production environment"
+	@echo "  docker-vps         - Start VPS production environment"  
 	@echo "  docker-stop        - Stop all Docker services"
 
 check-requirements:
@@ -30,8 +31,20 @@ docker-prod:
 	$(DOCKER_COMPOSE) -f docker-compose.prod.yml up -d
 	@echo "Production environment running at http://localhost:8000"
 
+docker-vps:
+	@echo "Starting VPS production environment..."
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml down || true
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml pull
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml up -d
+	@echo "VPS environment starting..."
+	@sleep 15
+	@echo "Checking health..."
+	@curl -f http://localhost:8000/health || { echo "❌ Health check failed"; exit 1; }
+	@echo "✅ VPS environment running successfully at http://localhost:8000"
+
 docker-stop:
 	@echo "Stopping all Docker services..."
 	$(DOCKER_COMPOSE) -f docker-compose.dev.yml down || true
 	$(DOCKER_COMPOSE) -f docker-compose.prod.yml down || true
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml down || true
 	$(DOCKER_COMPOSE) down || true
