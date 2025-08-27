@@ -199,18 +199,33 @@ jobs:
           echo "Image: $IMAGE_TAG"
           
           # Create directory structure on VPS first
-          ssh root@69.62.103.163 << EOF
-            echo "📁 Creating project structure..."
+          echo "📁 Creating project structure on VPS..."
+          ssh root@69.62.103.163 << 'SETUP_EOF'
+            echo "Creating /opt/api-consulta-v2 structure..."
             mkdir -p /opt/api-consulta-v2/logs
             mkdir -p /opt/api-consulta-v2/storage
             mkdir -p /opt/api-consulta-v2/monitoring/grafana/dashboards
             mkdir -p /opt/api-consulta-v2/monitoring/grafana/datasources
-          EOF
+            
+            # Set permissions
+            chmod -R 755 /opt/api-consulta-v2
+            
+            echo "Directory structure created successfully:"
+            ls -la /opt/api-consulta-v2/
+            ls -la /opt/api-consulta-v2/monitoring/
+          SETUP_EOF
           
-          # Transfer necessary files to VPS
-          echo "📤 Transferring configuration files..."
-          scp -r docker-compose.vps.yml Makefile nginx.vps.conf root@69.62.103.163:/opt/api-consulta-v2/
-          scp -r monitoring/ root@69.62.103.163:/opt/api-consulta-v2/
+          # Transfer configuration files first
+          echo "📤 Transferring main configuration files..."
+          scp docker-compose.vps.yml root@69.62.103.163:/opt/api-consulta-v2/
+          scp Makefile root@69.62.103.163:/opt/api-consulta-v2/
+          scp nginx.vps.conf root@69.62.103.163:/opt/api-consulta-v2/
+          
+          # Transfer monitoring files individually to debug
+          echo "📤 Transferring monitoring configuration..."
+          scp monitoring/prometheus.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/
+          scp monitoring/grafana/datasources/prometheus.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/datasources/
+          scp monitoring/grafana/dashboards/api-monitoring.json root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/dashboards/
           
           # Connect to VPS and deploy using Make
           echo "🚀 Starting deployment..."
