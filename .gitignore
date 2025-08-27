@@ -3,3 +3,16 @@ scripts/database/.env
 .devops
 .venv/
 venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+logs/
+*.log
+
+# Backups
+*.json.backup
+backups/

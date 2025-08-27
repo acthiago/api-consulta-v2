@@ -1,25 +1,78 @@
 # MongoDB Cloud Database Management
 
-Este diretório contém scripts para gerenciar, monitorar e organizar o banco de dados MongoDB na cloud (MongoDB Atlas).
+Este diretório contém scripts para gerenciar, monitorar e organizar o banco de dados MongoDB na cloud (MongoDB Atlas), integrado com a infraestrutura de produção VPS.
+
+## 🏗️ **Arquitetura Atual**
+
+### **🚀 Produção VPS (69.62.103.163):**
+- **API FastAPI**: `https://api.thiagoac.com`
+- **MongoDB Atlas**: Cloud database com SSL
+- **Traefik Gateway**: Roteamento e SSL automático
+- **Monitoring**: Grafana + Prometheus + Redis
+- **CI/CD**: GitHub Actions com deploy automatizado
+
+### **🌐 URLs de Acesso:**
+- 🚀 **API Docs**: `https://api.thiagoac.com/docs`
+- 📊 **Grafana**: `https://monitor.thiagoac.com`  
+- 📈 **Prometheus**: `https://monitor.thiagoac.com/prometheus`
+- 🌐 **Traefik**: `https://gateway.thiagoac.com`
 
 ## 📋 Estrutura dos Scripts
 
 ```
 scripts/database/
-├── mongo_manager.py    # Gerenciador principal do banco
-├── migrations.py       # Sistema de migrações
-├── monitoring.py       # Monitoramento e métricas
-├── setup.sh           # Script de configuração
-├── .env.example       # Exemplo de configuração
-├── README.md          # Esta documentação
-└── logs/              # Logs dos scripts
-└── backups/           # Backups do banco
-└── config/            # Configurações
+├── mongo_manager.py       # Gerenciador principal do banco
+├── mongo-manager          # Script de conveniência para mongo_manager.py
+├── migrations.py          # Sistema de migrações
+├── migrate               # Script de conveniência para migrations.py
+├── monitoring.py         # Monitoramento e métricas
+├── monitor              # Script de conveniência para monitoring.py
+├── generate_test_data.py # Gerador de dados de teste
+├── generate-data        # Script de conveniência para generate_test_data.py
+├── setup.sh            # Script de configuração inicial
+├── .env.example        # Exemplo de configuração
+├── .env                # Configuração local (não commitado)
+├── README.md           # Esta documentação
+├── backups/            # Backups do banco
+├── logs/              # Logs dos scripts
+├── config/            # Configurações
+├── venv/              # Ambiente virtual Python
+└── __pycache__/       # Cache Python
 ```
 
-## 🚀 Configuração Inicial
+## 🚀 Configuração por Ambiente
 
-### 1. Execute o Setup
+### **💻 Desenvolvimento Local:**
+
+#### 1. Execute o Setup
+```bash
+cd scripts/database/
+chmod +x setup.sh
+./setup.sh
+```
+
+#### 2. Configure para MongoDB Local
+```bash
+# .env para desenvolvimento
+MONGO_URI=mongodb://localhost:27017
+DATABASE_NAME=api_consulta_v2
+```
+
+### **🌐 Produção VPS:**
+
+#### 1. Configuração Automática via CI/CD
+Os scripts são executados automaticamente durante o deploy via GitHub Actions.
+
+#### 2. Configuração Manual (se necessário)
+```bash
+# .env.vps para produção
+MONGO_URI=mongodb+srv://user:pass@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+DATABASE_NAME=api_consulta_v2_prod
+```
+
+## 🔧 Setup Local Detalhado
+
+### 1. Execute o Setup Local
 ```bash
 cd scripts/database/
 chmod +x setup.sh
@@ -31,19 +84,24 @@ Este script irá:
 - 📦 Instalar pymongo e outras bibliotecas
 - 📁 Criar estrutura de diretórios
 - 🔧 Configurar permissões
-- 📝 Criar arquivo .env
+- 📝 Criar arquivo .env para desenvolvimento
 
-### 2. Configure a Conexão
-Edite o arquivo `.env` e configure sua string de conexão:
-
+### 2. Configure a Conexão Local
 ```bash
 nano .env
 ```
 
 Substitua `<db_password>` pela senha real do seu MongoDB Atlas:
+```bash
+# Para desenvolvimento local
+MONGO_URI=mongodb://localhost:27017
+
+# Para produção VPS (MongoDB Atlas)
+MONGO_URI=mongodb+srv://seu_usuario:sua_senha@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+DATABASE_NAME=api_consulta_v2_prod
 ```
-MONGO_URI=mongodb+srv://thiago:SUA_SENHA_AQUI@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-```
+
+> **⚠️ Importante**: Em produção (VPS), use sempre MongoDB Atlas com SSL e autenticação.
 
 ## 📚 Scripts Disponíveis
 
@@ -337,36 +395,56 @@ USUARIOS                    AUDITORIA
 ### 🔄 Fluxo de Dados e Operações:
 
 ```
-                          FLUXO DE OPERAÇÕES
-                     ┌─────────────────────────────┐
-                     │       API REQUESTS          │
-                     └─────────────┬───────────────┘
-                                   │
-                     ┌─────────────▼───────────────┐
-                     │     AUTHENTICATION          │
-                     │    (Collection: usuarios)   │
-                     └─────────────┬───────────────┘
-                                   │
-                     ┌─────────────▼───────────────┐
-                     │       AUDIT LOG             │
-                     │   (Collection: auditoria)   │ ◄─── Log de todas as operações
-                     └─────────────┬───────────────┘
-                                   │
-               ┌───────────────────┼───────────────────┐
-               │                   │                   │
-               ▼                   ▼                   ▼
-    ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-    │   GESTÃO DE     │ │   GESTÃO DE     │ │   GESTÃO DE     │
-    │    CLIENTES     │ │   PAGAMENTOS    │ │    BOLETOS      │
-    └─────────────────┘ └─────────────────┘ └─────────────────┘
-             │                   │                   │
-             │                   │                   │
-        ┌────▼────┐         ┌────▼────┐         ┌────▼────┐
-        │CREATE   │         │CREATE   │         │CREATE   │
-        │READ     │         │READ     │         │READ     │
-        │UPDATE   │         │UPDATE   │         │UPDATE   │
-        │DELETE   │         │DELETE   │         │DELETE   │
-        └─────────┘         └─────────┘         └─────────┘
+                          ARQUITETURA DE PRODUÇÃO VPS
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │                          CLOUDFLARE DNS                             │
+    │   api.thiagoac.com  │  monitor.thiagoac.com  │  gateway.thiagoac.com│
+    └──────────────┬──────────────────┬──────────────────┬───────────────┘
+                   │                  │                  │
+                   │ (SSL/HTTPS)      │ (SSL/HTTPS)      │ (SSL/HTTPS)
+                   │                  │                  │
+    ┌──────────────▼──────────────────▼──────────────────▼───────────────┐
+    │                        VPS (69.62.103.163)                         │
+    │  ┌─────────────────────────────────────────────────────────────┐   │
+    │  │                  TRAEFIK GATEWAY v3.0                      │   │
+    │  │            Auto-discovery │ Rate Limiting │ Metrics        │   │
+    │  └─────────────────────┬───────────────────┬─────────────────────┘   │
+    │                        │                   │                         │
+    │    ┌───────────────────▼─────┐   ┌─────────▼─────────────────────┐   │
+    │    │     FastAPI             │   │      MONITORING STACK        │   │
+    │    │  api.thiagoac.com       │   │   monitor.thiagoac.com       │   │
+    │    │ ┌─────────────────────┐ │   │ ┌─────────────────────────┐   │   │
+    │    │ │   MongoDB Atlas     │ │   │ │      Grafana            │   │   │
+    │    │ │   (Cloud DB)        │◄┼───┼─┤      Dashboards         │   │   │
+    │    │ │                     │ │   │ └─────────────────────────┘   │   │
+    │    │ └─────────────────────┘ │   │ ┌─────────────────────────┐   │   │
+    │    │ ┌─────────────────────┐ │   │ │      Prometheus         │   │   │
+    │    │ │      Redis          │ │   │ │   /prometheus endpoint  │   │   │
+    │    │ │      Cache          │ │   │ └─────────────────────────┘   │   │
+    │    │ └─────────────────────┘ │   │ ┌─────────────────────────┐   │   │
+    │    └─────────────────────────┘   │ │      Redis              │   │   │
+    │                                  │ │      Metrics Cache      │   │   │
+    │                                  │ └─────────────────────────┘   │   │
+    │                                  └───────────────────────────────┘   │
+    └─────────────────────────────────────────────────────────────────────┘
+                                       │
+                   ┌───────────────────▼────────────────────┐
+                   │            FLUXO DE DADOS              │
+                   └────────────────────────────────────────┘
+                                       │
+        ┌──────────────────────────────┼──────────────────────────────┐
+        │                              │                              │
+        ▼                              ▼                              ▼
+┌─────────────────┐          ┌─────────────────┐          ┌─────────────────┐
+│   API REQUESTS  │          │   AUDIT LOG     │          │   MONITORING    │
+│ ┌─────────────┐ │          │ ┌─────────────┐ │          │ ┌─────────────┐ │
+│ │ CREATE      │ │          │ │ All Actions │ │          │ │ Metrics     │ │
+│ │ READ        │ │ ────────►│ │ Users       │ │ ────────►│ │ Dashboards  │ │
+│ │ UPDATE      │ │          │ │ Operations  │ │          │ │ Alerts      │ │
+│ │ DELETE      │ │          │ └─────────────┘ │          │ └─────────────┘ │
+│ └─────────────┘ │          └─────────────────┘          └─────────────────┘
+└─────────────────┘
+```
 
                           RELACIONAMENTOS
                     ┌─────────────────────────┐
@@ -561,22 +639,70 @@ chmod +x mongo-manager migrate monitor
 
 ## 🔗 Integração com a API
 
-Estes scripts podem ser integrados ao ciclo de vida da API:
+Estes scripts podem ser integrados ao ciclo de vida da API FastAPI:
 
+### 🚀 **Ambiente de Produção VPS:**
 ```bash
-# Em CI/CD
-./migrate up                    # Aplicar migrações
-./monitor status               # Verificar saúde
-./mongo-manager                # Backup automático
+# Stack completo com Traefik Gateway
+make docker-vps
 
-# Monitoramento contínuo
-./monitor monitor 60 1440      # 24h de monitoramento
+# URLs da API em produção:
+# 🚀 API: https://api.thiagoac.com
+# 📊 Grafana: https://monitor.thiagoac.com  
+# 📈 Prometheus: https://monitor.thiagoac.com/prometheus
+# 🌐 Traefik: https://gateway.thiagoac.com
+```
+
+### 🔄 **Pipeline CI/CD:**
+```bash
+# Em GitHub Actions (.github/workflows/python-app.yml)
+./migrate up                    # Aplicar migrações antes do deploy
+./monitor status               # Verificar saúde do banco
+./mongo-manager                # Backup automático
+```
+
+### 📊 **Monitoramento Integrado:**
+```bash
+# Monitoramento contínuo (24h)
+./monitor monitor 60 1440      
+
+# Integração com Prometheus (VPS)
+# Métricas disponíveis em: https://monitor.thiagoac.com/prometheus
+```
+
+### 🔧 **Configuração por Ambiente:**
+```bash
+# Desenvolvimento (.env local)
+MONGO_URI=mongodb://localhost:27017
+DATABASE_NAME=api_consulta_v2
+
+# Produção VPS (.env.vps)
+MONGO_URI=mongodb+srv://user:pass@cluster0.wjwnv.mongodb.net/
+DATABASE_NAME=api_consulta_v2_prod
 ```
 
 ## 📞 Suporte
 
-Para problemas ou dúvidas:
+### 🔍 **Troubleshooting Local:**
 1. Verifique os logs em `logs/`
 2. Execute `./setup.sh` novamente
-3. Consulte a documentação do MongoDB Atlas
+3. Confirme se MongoDB local está rodando: `brew services list | grep mongodb`
 4. Verifique as variáveis de ambiente no `.env`
+
+### 🌐 **Troubleshooting Produção:**
+1. **Monitoramento**: Acesse `https://monitor.thiagoac.com`
+2. **Logs da API**: `docker logs api-consulta-v2-production`
+3. **Status do banco**: Execute `./monitor status` via SSH na VPS
+4. **Métricas**: Consulte Prometheus em `https://monitor.thiagoac.com/prometheus`
+
+### 🚨 **Contatos de Emergência:**
+- **VPS**: 69.62.103.163 (SSH com chave configurada)
+- **MongoDB Atlas**: Console web oficial
+- **Cloudflare**: Dashboard para gestão de DNS/SSL
+- **GitHub Actions**: Logs de CI/CD no repositório
+
+### 📚 **Documentação Adicional:**
+- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
+- [Traefik v3.0 Documentation](https://doc.traefik.io/traefik/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Docker Compose Reference](https://docs.docker.com/compose/)
