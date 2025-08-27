@@ -1,9 +1,9 @@
 # ===== Multi-stage build for optimization =====
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Build arguments
-ARG BUILDTIME
-ARG VERSION
+ARG BUILDTIME=""
+ARG VERSION=""
 
 # Set environment variables for build
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -24,7 +24,7 @@ RUN pip install --upgrade pip && \
     pip install --user --no-cache-dir -r requirements.txt
 
 # ===== Production stage =====
-FROM python:3.11-slim as production
+FROM python:3.11-slim AS production
 
 # Labels for metadata
 LABEL maintainer="acthiago" \
