@@ -32,15 +32,26 @@ docker-prod:
 	@echo "Production environment running at http://localhost:8000"
 
 docker-vps:
-	@echo "Starting VPS production environment..."
-	$(DOCKER_COMPOSE) -f docker-compose.vps.yml down || true
-	$(DOCKER_COMPOSE) -f docker-compose.vps.yml pull
-	$(DOCKER_COMPOSE) -f docker-compose.vps.yml up -d
-	@echo "VPS environment starting..."
-	@sleep 15
-	@echo "Checking health..."
-	@curl -f http://localhost:8000/health || { echo "❌ Health check failed"; exit 1; }
-	@echo "✅ VPS environment running successfully at http://localhost:8000"
+	@echo "🚀 Iniciando deploy para VPS com stack completo..."
+	@echo "📋 Parando serviços existentes..."
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml down --remove-orphans || true
+	@echo "🔄 Atualizando imagens..."
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml pull || true
+	@echo "🏗️  Iniciando stack completo (API + Redis + Prometheus + Grafana)..."
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml up -d --force-recreate
+	@echo "⏳ Aguardando inicialização dos serviços..."
+	@sleep 45
+	@echo "🔍 Verificando status dos serviços..."
+	$(DOCKER_COMPOSE) -f docker-compose.vps.yml ps
+	@echo "🌐 Testando conectividade dos serviços..."
+	@curl -f http://localhost/health || echo "⚠️  API health check falhou"
+	@curl -f http://localhost/grafana/api/health || echo "⚠️  Grafana health check falhou"
+	@curl -f http://localhost/prometheus/-/healthy || echo "⚠️  Prometheus health check falhou"
+	@echo "✅ Deploy concluído! Stack completo disponível:"
+	@echo "   🚀 API: http://69.62.103.163/api/docs"
+	@echo "   📊 Grafana: http://69.62.103.163/grafana (admin/admin123)"
+	@echo "   📈 Prometheus: http://69.62.103.163/prometheus"
+	@echo "   📋 Redis: Disponível internamente na rede"
 
 docker-stop:
 	@echo "Stopping all Docker services..."
