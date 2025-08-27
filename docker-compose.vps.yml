@@ -21,8 +21,6 @@ services:
     image: ${DOCKER_HUB_USERNAME}/poc-api-consulta-v2:latest
     container_name: api-consulta-v2-production
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
@@ -46,6 +44,20 @@ services:
       - ./storage:/app/storage
     depends_on:
       - redis
+    labels:
+      # Traefik auto-discovery
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`69.62.103.163`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+      
+      # Middleware para remover /api prefix
+      - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.api.middlewares=api-stripprefix"
+      
+      # Rate limiting
+      - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=100"
+      - "traefik.http.middlewares.api-ratelimit.ratelimit.average=10"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -76,8 +88,6 @@ services:
     image: prom/prometheus:latest
     container_name: api-consulta-v2-prometheus
     restart: unless-stopped
-    ports:
-      - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -89,21 +99,27 @@ services:
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
       - '--web.route-prefix=/'
+      - '--web.external-url=http://69.62.103.163/prometheus'
     networks:
       - monitoring_network
     depends_on:
       - api
+    labels:
+      # Traefik auto-discovery
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`69.62.103.163`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
 
   # ===== Grafana Dashboard =====
   grafana:
     image: grafana/grafana:latest
     container_name: api-consulta-v2-grafana
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_ROOT_URL=http://69.62.103.163/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
@@ -113,21 +129,56 @@ services:
       - monitoring_network
     depends_on:
       - prometheus
+    labels:
+      # Traefik auto-discovery  
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`69.62.103.163`) && PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
-  # ===== Nginx Reverse Proxy =====
-  nginx:
-    image: nginx:alpine
-    container_name: api-consulta-v2-nginx
+  # ===== Traefik API Gateway =====
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik-gateway
     restart: unless-stopped
+    command:
+      # Enable Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=api_network"
+      
+      # Configure entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      
+      # Enable API and Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      
+      # Metrics for Prometheus
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80"       # HTTP
+      - "443:443"     # HTTPS
+      - "8080:8080"   # Traefik Dashboard
     volumes:
-      - ./nginx.vps.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - api
-      - grafana
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ssl:/ssl:ro
     networks:
       - api_network
       - monitoring_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`69.62.103.163`) && PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

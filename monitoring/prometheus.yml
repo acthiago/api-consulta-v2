@@ -25,6 +25,13 @@ scrape_configs:
     static_configs:
       - targets: ['redis:6379']
 
+  # Traefik Gateway
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
   # Node Exporter (se instalado no host)
   - job_name: 'node-exporter'
     static_configs:

@@ -32,25 +32,27 @@ docker-prod:
 	@echo "Production environment running at http://localhost:8000"
 
 docker-vps:
-	@echo "🚀 Iniciando deploy para VPS com stack completo..."
+	@echo "🚀 Iniciando deploy para VPS com Traefik API Gateway..."
 	@echo "📋 Parando serviços existentes..."
 	$(DOCKER_COMPOSE) -f docker-compose.vps.yml down --remove-orphans || true
 	@echo "🔄 Atualizando imagens..."
 	$(DOCKER_COMPOSE) -f docker-compose.vps.yml pull || true
-	@echo "🏗️  Iniciando stack completo (API + Redis + Prometheus + Grafana)..."
+	@echo "🏗️  Iniciando stack completo (API + Redis + Prometheus + Grafana + Traefik)..."
 	$(DOCKER_COMPOSE) -f docker-compose.vps.yml up -d --force-recreate
 	@echo "⏳ Aguardando inicialização dos serviços..."
 	@sleep 45
 	@echo "🔍 Verificando status dos serviços..."
 	$(DOCKER_COMPOSE) -f docker-compose.vps.yml ps
 	@echo "🌐 Testando conectividade dos serviços..."
-	@curl -f http://localhost/health || echo "⚠️  API health check falhou"
+	@curl -f http://localhost/api/health || echo "⚠️  API health check falhou"
 	@curl -f http://localhost/grafana/api/health || echo "⚠️  Grafana health check falhou"
 	@curl -f http://localhost/prometheus/-/healthy || echo "⚠️  Prometheus health check falhou"
-	@echo "✅ Deploy concluído! Stack completo disponível:"
+	@curl -f http://localhost:8080/api/version || echo "⚠️  Traefik health check falhou"
+	@echo "✅ Deploy concluído! Stack completo com Traefik Gateway:"
 	@echo "   🚀 API: http://69.62.103.163/api/docs"
 	@echo "   📊 Grafana: http://69.62.103.163/grafana (admin/admin123)"
 	@echo "   📈 Prometheus: http://69.62.103.163/prometheus"
+	@echo "   🌐 Traefik Dashboard: http://69.62.103.163:8080"
 	@echo "   📋 Redis: Disponível internamente na rede"
 
 docker-stop:

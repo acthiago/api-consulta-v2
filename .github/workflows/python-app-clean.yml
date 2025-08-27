@@ -198,49 +198,19 @@ jobs:
           echo "🌟 Deploying to production VPS: 69.62.103.163"
           echo "Image: $IMAGE_TAG"
           
-          # Create directory structure on VPS first
-          echo "📁 Creating project structure on VPS..."
-          ssh root@69.62.103.163 << 'SETUP_EOF'
-            echo "Creating /opt/api-consulta-v2 structure..."
-            mkdir -p /opt/api-consulta-v2/logs
-            mkdir -p /opt/api-consulta-v2/storage
-            mkdir -p /opt/api-consulta-v2/monitoring/grafana/dashboards
-            mkdir -p /opt/api-consulta-v2/monitoring/grafana/datasources
-            
-            # Remove any existing prometheus.yml directory (corrupted state)
-            if [ -d "/opt/api-consulta-v2/monitoring/prometheus.yml" ]; then
-              echo "⚠️ Removing corrupted prometheus.yml directory..."
-              rm -rf /opt/api-consulta-v2/monitoring/prometheus.yml
-            fi
-            
-            # Set permissions
-            chmod -R 755 /opt/api-consulta-v2
-            
-            echo "Directory structure created successfully:"
-            ls -la /opt/api-consulta-v2/
-            ls -la /opt/api-consulta-v2/monitoring/
-          SETUP_EOF
-          
-          # Transfer configuration files first
-          echo "📤 Transferring main configuration files..."
-          scp docker-compose.vps.yml root@69.62.103.163:/opt/api-consulta-v2/
-          scp Makefile root@69.62.103.163:/opt/api-consulta-v2/
-          
-          # Transfer monitoring files individually to debug
-          echo "📤 Transferring monitoring configuration..."
-          scp monitoring/prometheus.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/
-          scp monitoring/grafana/datasources/prometheus.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/datasources/
-          scp monitoring/grafana/dashboards/api-monitoring.json root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/dashboards/
+          # Transfer necessary files to VPS
+          scp -r docker-compose.vps.yml Makefile nginx.vps.conf root@69.62.103.163:/opt/api-consulta-v2/
+          scp -r monitoring/ root@69.62.103.163:/opt/api-consulta-v2/
           
           # Connect to VPS and deploy using Make
-          echo "🚀 Starting deployment..."
           ssh root@69.62.103.163 << EOF
             export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
             export MONGO_URI="$MONGO_URI"
             export SECRET_KEY="$SECRET_KEY"
             
-            echo "📁 Preparing deployment..."
+            echo "📁 Setting up project directory..."
             cd /opt/api-consulta-v2
+            mkdir -p logs storage monitoring/grafana/dashboards monitoring/grafana/datasources
             
             echo "🚀 Deploying using Make..."
             make docker-vps
