@@ -65,7 +65,7 @@ env:
 **Localização**: `/home/thiago/api-consulta-v2/api-consulta-v2/scripts/database/.env`
 **Uso**: Scripts de gerenciamento do banco
 ```bash
-MONGO_URI=mongodb+srv://thiago:hRaQeyhdITNyHkLA@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+MONGO_URI=mongodb+srv://seu_usuario:sua_senha@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
 DATABASE_NAME=api_consulta_v2
 ```
 
@@ -73,7 +73,7 @@ DATABASE_NAME=api_consulta_v2
 **Localização**: `/home/thiago/api-consulta-v2/api-consulta-v2/scripts/database/.env.example`
 **Uso**: Template para scripts
 ```bash
-MONGO_URI=mongodb+srv://thiago:<db_password>@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+MONGO_URI=mongodb+srv://seu_usuario:sua_senha@cluster0.wjwnv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
 ```
 
 ## 🏗️ Código da Aplicação

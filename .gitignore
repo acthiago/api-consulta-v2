@@ -1,4 +1,5 @@
 .env
+scripts/database/.env
 .devops
 .venv/
 venv/
