@@ -7,7 +7,7 @@ import random
 import re
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import structlog
@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel
 from pymongo import MongoClient
@@ -65,7 +66,7 @@ class TokenResponse(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "access_token": "jwt_token_example_admin",
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
                 "expires_in": 1800,
                 "message": "Login realizado com sucesso"
@@ -202,6 +203,43 @@ limiter = Limiter(key_func=get_remote_address)
 settings = Settings()
 
 
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Create JWT access token"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = (datetime.utcnow() +
+                  timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
+    return encoded_jwt
+
+
+def verify_token(token: str):
+    """Verify JWT token"""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return username
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 def get_mongodb_connection():
     """Get MongoDB connection using application settings"""
     client = MongoClient(settings.MONGO_URI)
@@ -249,22 +287,10 @@ def validate_cpf(cpf: str) -> bool:
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     """
-    Verifica o token e retorna o usuário atual
+    Verifica o token JWT e retorna o usuário atual
     """
-    # Valida tokens simples para desenvolvimento
-    valid_tokens = [
-        "jwt_token_example_admin",
-        "valid_token"
-    ]
-
-    if token in valid_tokens:
-        return {"username": "admin", "role": "admin"}
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token inválido",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    username = verify_token(token)
+    return {"username": username, "role": "admin"}
 
 
 @asynccontextmanager
@@ -1183,10 +1209,19 @@ async def login(
     # Por enquanto, aceita admin/admin123 para testes
     if form_data.username == "admin" and form_data.password == "admin123":
         logger.info("Login realizado com sucesso", username=form_data.username)
+
+        # Gera JWT real
+        access_token_expires = timedelta(
+            minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+        access_token = create_access_token(
+            data={"sub": form_data.username}, expires_delta=access_token_expires
+        )
+
         return TokenResponse(
-            access_token="jwt_token_example_admin",
+            access_token=access_token,
             token_type="bearer",
-            expires_in=1800,  # 30 minutos
+            expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             message="Login realizado com sucesso"
         )
 
@@ -1226,10 +1261,19 @@ async def login_json(
     # Por enquanto, aceita admin/admin123 para testes
     if credentials.username == "admin" and credentials.password == "admin123":
         logger.info("Login JSON realizado com sucesso", username=credentials.username)
+
+        # Gera JWT real
+        access_token_expires = timedelta(
+            minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+        access_token = create_access_token(
+            data={"sub": credentials.username}, expires_delta=access_token_expires
+        )
+
         return TokenResponse(
-            access_token="jwt_token_example_admin",
+            access_token=access_token,
             token_type="bearer",
-            expires_in=1800,  # 30 minutos
+            expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             message="Login realizado com sucesso"
         )
 
