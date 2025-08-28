@@ -25,6 +25,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from src.config.settings import Settings
+
 # Configure structured logging
 structlog.configure(
     processors=[
@@ -195,26 +197,9 @@ ACTIVE_CONNECTIONS = Counter("active_connections_total", "Active connections")
 # Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
 
-# Simple settings for testing
-
-
-class Settings:
-    APP_NAME = "API Consulta v2"
-    APP_DESCRIPTION = "Sistema Completo de Gestão Financeira"
-    APP_VERSION = "2.1.0"
-    DOCS_URL = "/docs"
-    REDOC_URL = "/redoc"
-    ENABLE_DOCS = True
-    ENABLE_CORS = True
-    CORS_ORIGINS = ["*"]
-    ENVIRONMENT = "development"
-    ENABLE_METRICS = True
-    METRICS_PATH = "/metrics"
-
+# MongoDB Connection
 
 settings = Settings()
-
-# MongoDB Connection
 
 
 def get_mongodb_connection():
