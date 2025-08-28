@@ -14,7 +14,6 @@ from typing import List, Optional
 import structlog
 import uvicorn
 from bson import ObjectId
-from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -221,9 +220,6 @@ settings = Settings()
 
 def get_mongodb_connection():
     """Get MongoDB connection using application settings"""
-    from src.config.settings import Settings
-    
-    settings = Settings()
     client = MongoClient(settings.MONGO_URI)
     return client[settings.MONGO_DB_NAME]
 
