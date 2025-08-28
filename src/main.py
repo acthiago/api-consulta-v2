@@ -221,7 +221,7 @@ settings = Settings()
 
 def get_mongodb_connection():
     """Get MongoDB connection using application settings"""
-    from .config.settings import Settings
+    from src.config.settings import Settings
     
     settings = Settings()
     client = MongoClient(settings.MONGO_URI)
