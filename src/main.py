@@ -3,7 +3,6 @@ API de Consulta de Boletos - v2
 Arquitetura Hexagonal com segurança e performance aprimoradas
 """
 
-import os
 import random
 import re
 import time
