@@ -220,18 +220,12 @@ settings = Settings()
 
 
 def get_mongodb_connection():
-    """Get MongoDB connection"""
-    # Load environment variables
-    load_dotenv('/app/scripts/database/.env')
-
-    mongo_uri = os.getenv('MONGO_URI')
-    database_name = os.getenv('DATABASE_NAME', 'api_consulta_v2')
-
-    if not mongo_uri:
-        raise ValueError("MONGO_URI não encontrado nas variáveis de ambiente")
-
-    client = MongoClient(mongo_uri)
-    return client[database_name]
+    """Get MongoDB connection using application settings"""
+    from .config.settings import Settings
+    
+    settings = Settings()
+    client = MongoClient(settings.MONGO_URI)
+    return client[settings.MONGO_DB_NAME]
 
 
 # Authentication
