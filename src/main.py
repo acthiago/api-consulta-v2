@@ -402,7 +402,7 @@ async def metrics_middleware(request: Request, call_next):
         method=request.method, endpoint=request.url.path, status=response.status_code
     ).inc()
 
-    REQUEST_LATENCY.observe(time.time() - start_time)
+    REQUEST_LATENCY.labels(endpoint=request.url.path).observe(time.time() - start_time)
 
     return response
 
