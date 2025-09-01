@@ -1292,7 +1292,131 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """
-    # Login com OAuth2 Password Flow
+    @app.post("/admin/populate-test-data",
+          tags=["Admin"],
+          summary="Popula dados de teste",
+          description="Endpoint administrativo para popular dados de teste no banco")
+async def populate_test_data_endpoint(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Endpoint administrativo para popular dados de teste
+    
+    Cria cliente e dívidas de teste para validação da API
+    """
+    try:
+        if not mongo_provider:
+            raise HTTPException(status_code=500, detail="Banco de dados indisponível")
+        
+        db = mongo_provider.db
+        
+        # Limpa dados existentes do cliente de teste
+        await db.clientes.delete_many({"cpf": "10799118397"})
+        await db.dividas.delete_many({})  # Remove todas as dívidas para recriar
+        
+        # Cria cliente de teste
+        from bson.decimal128 import Decimal128
+        cliente_data = {
+            "_id": ObjectId(),
+            "nome": "Larissa Brito",
+            "cpf": "10799118397",
+            "email": "uda-mota@example.net",
+            "telefone": "+55 (071) 4352-4082",
+            "data_nascimento": "1951-11-03",
+            "endereco": {
+                "rua": "Avenida Novaes, 82",
+                "cidade": "Albuquerque",
+                "estado": "RJ", 
+                "cep": "77752-047",
+                "numero": "4346",
+                "complemento": None
+            },
+            "status": "ativo",
+            "score_credito": None,
+            "limite_credito": None,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+        
+        resultado_cliente = await db.clientes.insert_one(cliente_data)
+        cliente_id = resultado_cliente.inserted_id
+        
+        # Cria dívidas de teste
+        dividas_data = [
+            {
+                "_id": ObjectId(),
+                "cliente_id": cliente_id,
+                "tipo": "cartao_credito",
+                "descricao": "Cartão de Crédito - Nubank",
+                "valor_original": Decimal128("1500.00"),
+                "valor_atual": Decimal128("1650.00"),
+                "status": "vencido",
+                "data_vencimento": datetime.now() - timedelta(days=15),
+                "dias_atraso": 15,
+                "juros_mes": Decimal128("2.5"),
+                "multa": Decimal128("150.00"),
+                "created_at": datetime.now(),
+                "updated_at": datetime.now()
+            },
+            {
+                "_id": ObjectId(), 
+                "cliente_id": cliente_id,
+                "tipo": "emprestimo",
+                "descricao": "Empréstimo Pessoal - Banco Inter",
+                "valor_original": Decimal128("2800.00"),
+                "valor_atual": Decimal128("2800.00"),
+                "status": "ativo",
+                "data_vencimento": datetime.now() + timedelta(days=30),
+                "dias_atraso": 0,
+                "juros_mes": Decimal128("1.8"),
+                "multa": Decimal128("0.00"),
+                "created_at": datetime.now(),
+                "updated_at": datetime.now()
+            },
+            {
+                "_id": ObjectId(),
+                "cliente_id": cliente_id,
+                "tipo": "financiamento",
+                "descricao": "Financiamento Veículo - Santander",
+                "valor_original": Decimal128("25000.00"),
+                "valor_atual": Decimal128("28000.00"),
+                "status": "inadimplente",
+                "data_vencimento": datetime.now() - timedelta(days=45),
+                "dias_atraso": 45,
+                "juros_mes": Decimal128("3.2"),
+                "multa": Decimal128("3000.00"),
+                "created_at": datetime.now(),
+                "updated_at": datetime.now()
+            }
+        ]
+        
+        await db.dividas.insert_many(dividas_data)
+        
+        # Verifica dados criados
+        total_dividas = await db.dividas.count_documents({"cliente_id": cliente_id})
+        
+        return {
+            "success": True,
+            "message": "Dados de teste criados com sucesso!",
+            "cliente_id": str(cliente_id),
+            "cliente_cpf": "10799118397",
+            "total_dividas": total_dividas,
+            "dividas_criadas": [
+                {"tipo": "cartao_credito", "valor": "R$ 1.650,00", "status": "vencido"},
+                {"tipo": "emprestimo", "valor": "R$ 2.800,00", "status": "ativo"}, 
+                {"tipo": "financiamento", "valor": "R$ 28.000,00", "status": "inadimplente"}
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao popular dados de teste: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao popular dados: {str(e)}"
+        )
+
+
+# Login com OAuth2 Password Flow
 
     **Credenciais de teste:**
     - username: `admin`
