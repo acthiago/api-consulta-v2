@@ -753,13 +753,17 @@ async def consultar_dividas_cliente(
             )
             # Converte Decimal128 para float se necessário
             valor_original = divida.get("valor_original", 0)
-            if hasattr(valor_original, 'to_decimal'):
+            if valor_original is None:
+                valor_original = 0.0
+            elif hasattr(valor_original, 'to_decimal'):
                 valor_original = float(valor_original.to_decimal())
             else:
                 valor_original = float(valor_original)
 
             valor_atual = divida.get("valor_atual", 0)
-            if hasattr(valor_atual, 'to_decimal'):
+            if valor_atual is None:
+                valor_atual = 0.0
+            elif hasattr(valor_atual, 'to_decimal'):
                 valor_atual = float(valor_atual.to_decimal())
             else:
                 valor_atual = float(valor_atual)
@@ -775,6 +779,23 @@ async def consultar_dividas_cliente(
                 elif status in ["vencido", "inadimplente"]:
                     dividas_vencidas += 1
 
+            # Converte juros_mes e multa com tratamento para Decimal128
+            juros_mes_valor = divida.get("juros_mes")
+            if juros_mes_valor is None:
+                juros_mes_final = None
+            elif hasattr(juros_mes_valor, 'to_decimal'):
+                juros_mes_final = float(juros_mes_valor.to_decimal())
+            else:
+                juros_mes_final = float(juros_mes_valor)
+
+            multa_valor = divida.get("multa")
+            if multa_valor is None:
+                multa_final = None
+            elif hasattr(multa_valor, 'to_decimal'):
+                multa_final = float(multa_valor.to_decimal())
+            else:
+                multa_final = float(multa_valor)
+
             divida_response = DividaResponse(
                 id=str(divida["_id"]),
                 tipo=divida.get("tipo", "outros"),
@@ -786,9 +807,8 @@ async def consultar_dividas_cliente(
                                     ) if divida.get("data_vencimento") else "",
                 dias_atraso=int(divida.get("dias_atraso", 0)),
                 status=status,
-                juros_mes=float(divida.get("juros_mes", 0)) if divida.get(
-                    "juros_mes") else None,
-                multa=float(divida.get("multa", 0)) if divida.get("multa") else None,
+                juros_mes=juros_mes_final,
+                multa=multa_final,
                 created_at=str(divida.get("created_at", "")
                                ) if divida.get("created_at") else "",
                 updated_at=str(divida.get("updated_at", "")
