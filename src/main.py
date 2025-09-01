@@ -80,16 +80,30 @@ class ClienteResponse(BaseModel):
 
 class DividaResponse(BaseModel):
     id: str
+    tipo: Optional[str] = "outros"
+    descricao: str
     valor: float
+    valor_original: Optional[float] = None
+    valor_atual: Optional[float] = None
     status: str
     data_vencimento: str
-    descricao: str
+    dias_atraso: Optional[int] = 0
+    juros_mes: Optional[float] = None
+    multa: Optional[float] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class DividasClienteResponse(BaseModel):
-    cliente_id: str
+    cliente_id: Optional[str] = None
+    cliente_cpf: str
+    cliente_nome: Optional[str] = None
     total_dividas: int
     valor_total: float
+    valor_total_original: Optional[float] = None
+    valor_total_atual: Optional[float] = None
+    dividas_ativas: Optional[int] = 0
+    dividas_vencidas: Optional[int] = 0
     dividas: List[DividaResponse]
 
 
@@ -755,6 +769,7 @@ async def consultar_dividas_cliente(
                 id=str(divida["_id"]),
                 tipo=divida.get("tipo", "outros"),
                 descricao=divida.get("descricao", ""),
+                valor=valor_atual,  # Campo obrigatório usando valor_atual
                 valor_original=valor_original,
                 valor_atual=valor_atual,
                 data_vencimento=str(divida.get("data_vencimento", "")
@@ -772,9 +787,11 @@ async def consultar_dividas_cliente(
             dividas_formatadas.append(divida_response)
 
         return DividasClienteResponse(
+            cliente_id=str(cliente.get("_id", "")),
             cliente_cpf=cpf,
             cliente_nome=cliente.get("nome", ""),
             total_dividas=len(dividas_formatadas),
+            valor_total=valor_total_atual,  # Campo obrigatório
             valor_total_original=valor_total_original,
             valor_total_atual=valor_total_atual,
             dividas_ativas=dividas_ativas,
