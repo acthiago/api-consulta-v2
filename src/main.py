@@ -1368,6 +1368,58 @@ async def login(
     )
 
 
+@app.get("/admin/list-cpfs",
+         tags=["Admin"],
+         summary="Lista CPFs cadastrados no banco",
+         description="Endpoint administrativo para listar todos os CPFs existentes")
+async def list_cpfs_endpoint(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista todos os CPFs cadastrados no banco
+
+    Útil para descobrir quais clientes já existem para testar os endpoints
+    """
+    try:
+        if not mongo_provider:
+            raise HTTPException(
+                status_code=500, detail="Banco de dados indisponível"
+            )
+
+        db = mongo_provider.db
+
+        # Busca todos os clientes
+        cursor = db.clientes.find({}, {"cpf": 1, "nome": 1, "_id": 1})
+        clientes_list = await cursor.to_list(length=1000)
+
+        clientes_info = []
+        for cliente in clientes_list:
+            # Conta dívidas do cliente
+            total_dividas = await db.dividas.count_documents(
+                {"cliente_id": cliente["_id"]}
+            )
+
+            clientes_info.append({
+                "cpf": cliente.get("cpf", ""),
+                "nome": cliente.get("nome", ""),
+                "total_dividas": total_dividas
+            })
+
+        return {
+            "success": True,
+            "total_clientes": len(clientes_info),
+            "clientes": clientes_info[:20],  # Limita a 20 para não sobrecarregar
+            "message": f"Encontrados {len(clientes_info)} clientes no banco"
+        }
+
+    except Exception as e:
+        logger.error(f"Erro ao listar CPFs: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar dados: {str(e)}"
+        )
+
+
 @app.post("/admin/populate-multiple-clients",
           tags=["Admin"],
           summary="Popula múltiplos clientes com dívidas",
