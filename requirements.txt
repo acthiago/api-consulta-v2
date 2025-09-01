@@ -3,12 +3,11 @@ fastapi==0.116.1
 uvicorn[standard]==0.24.0
 
 # Database
-pymongo==4.10.1
-motor==3.3.2
+pymongo==4.14.1
+motor==3.7.1
 
 # Cache
 redis==5.0.1
-aioredis==2.0.1
 
 # Security
 passlib[bcrypt]==1.7.4

@@ -1,7 +1,7 @@
 import json
 from typing import Optional
 
-import aioredis
+import redis.asyncio as redis
 
 from src.config.settings import Settings
 
@@ -9,13 +9,13 @@ from src.config.settings import Settings
 class RedisCache:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._pool: Optional[aioredis.Redis] = None
+        self._pool: Optional[redis.Redis] = None
 
     async def connect(self) -> None:
         if not self._settings.CACHE_ENABLED:
             return
         if self._pool is None:
-            self._pool = await aioredis.from_url(
+            self._pool = redis.from_url(
                 self._settings.REDIS_URL,
                 encoding="utf-8",
                 decode_responses=True,

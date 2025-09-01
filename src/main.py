@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-import jwt
 import structlog
 import uvicorn
 from bson import ObjectId
@@ -18,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
