@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     # Concurrency
     WEB_CONCURRENCY: int = Field(default=2)
 
-    model_config = {"env_file": ".env", "case_sensitive": True}
+    model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 
 
 # Global settings instance

@@ -67,10 +67,15 @@ class ClienteResponse(BaseModel):
     email: str
     telefone: str
     data_cadastro: str
-    score_credito: int
-    limite_credito: float
-    dividas_ativas: int
-    valor_total_dividas: float
+    data_nascimento: Optional[str] = None
+    endereco: Optional[dict] = None
+    status: str = "ativo"
+    score_credito: Optional[int] = None
+    limite_credito: Optional[float] = None
+    dividas_ativas: Optional[int] = None
+    valor_total_dividas: Optional[float] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class DividaResponse(BaseModel):
@@ -601,6 +606,37 @@ async def buscar_cliente(
                 detail=f"Cliente com CPF {cpf} não encontrado"
             )
 
+        # Calcula dados derivados (dívidas ativas e valor total)
+        try:
+            from bson import ObjectId as _ObjectId
+            if isinstance(cliente["_id"], str):
+                cliente_oid = _ObjectId(cliente["_id"])
+            else:
+                cliente_oid = cliente["_id"]
+
+            # Busca dívidas ativas para calcular estatísticas
+            cursor = mongo_provider.db.dividas.find({
+                "cliente_id": cliente_oid,
+                "status": {"$in": ["ativo", "vencido", "inadimplente"]}
+            })
+            dividas_ativas_list = await cursor.to_list(length=1000)
+
+            dividas_ativas_count = len(dividas_ativas_list)
+            valor_total_dividas = 0.0
+
+            for divida in dividas_ativas_list:
+                valor = divida.get("valor_atual", divida.get("valor_original", 0))
+                if hasattr(valor, 'to_decimal'):
+                    valor = float(valor.to_decimal())
+                else:
+                    valor = float(valor)
+                valor_total_dividas += valor
+
+        except Exception as e:
+            logger.warning(f"Erro ao calcular dívidas ativas: {e}")
+            dividas_ativas_count = 0
+            valor_total_dividas = 0.0
+
         # Formata os dados para retorno
         return ClienteResponse(
             id=str(cliente.get("_id", "")),
@@ -608,9 +644,17 @@ async def buscar_cliente(
             cpf=cliente.get("cpf", ""),
             email=cliente.get("email", ""),
             telefone=cliente.get("telefone", ""),
+            data_cadastro=(
+                str(cliente.get("created_at", ""))
+                if cliente.get("created_at") else datetime.now().strftime("%Y-%m-%d")
+            ),
             data_nascimento=cliente.get("data_nascimento", ""),
             endereco=cliente.get("endereco", {}),
             status=cliente.get("status", "ativo"),
+            score_credito=cliente.get("score_credito"),
+            limite_credito=cliente.get("limite_credito"),
+            dividas_ativas=dividas_ativas_count,
+            valor_total_dividas=valor_total_dividas,
             created_at=(
                 str(cliente.get("created_at", ""))
                 if cliente.get("created_at") else ""
