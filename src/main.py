@@ -2,14 +2,15 @@
 API de Consulta de Boletos - v2
 Arquitetura Hexagonal com segurança e performance aprimoradas
 """
+import random
 import re
 import time
-import random
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import List, Optional
 
 import jwt
+import structlog
 import uvicorn
 from bson import ObjectId
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
@@ -19,14 +20,18 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
 from passlib.context import CryptContext
-from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
-                               generate_latest)
-from pymongo import MongoClient
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from pydantic import BaseModel
+from pymongo import MongoClient
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-import structlog
 
 from src.config.settings import get_settings
 from src.infra.cache.redis_cache import RedisCache
