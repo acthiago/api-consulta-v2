@@ -733,8 +733,11 @@ async def consultar_dividas_cliente(
             cliente_oid = _ObjectId(cliente["_id"])
         else:
             cliente_oid = cliente["_id"]
+        
+        logger.info(f"Buscando dívidas para cliente_id: {cliente_oid}")
         cursor = mongo_provider.db.dividas.find({"cliente_id": cliente_oid})
         dividas_list = await cursor.to_list(length=1000)
+        logger.info(f"Encontradas {len(dividas_list)} dívidas para o cliente")
 
         # Converte as dívidas para o formato de resposta
         dividas_formatadas = []
@@ -744,6 +747,7 @@ async def consultar_dividas_cliente(
         dividas_vencidas = 0
 
         for divida in dividas_list:
+            logger.info(f"Processando dívida: {divida.get('_id')} - Status: {divida.get('status')}")
             # Converte Decimal128 para float se necessário
             valor_original = divida.get("valor_original", 0)
             if hasattr(valor_original, 'to_decimal'):

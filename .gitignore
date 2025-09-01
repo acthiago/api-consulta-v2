@@ -16,3 +16,7 @@ logs/
 # Backups
 *.json.backup
 backups/
+venv/
+*.log
+__pycache__/
+*.pyc
