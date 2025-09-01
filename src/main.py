@@ -1370,10 +1370,10 @@ async def populate_test_data_endpoint(
 
         # Busca o cliente existente antes de deletar para pegar o ID
         cliente_existente = await db.clientes.find_one({"cpf": "10799118397"})
-        
+
         # Limpa dados existentes do cliente de teste
         await db.clientes.delete_many({"cpf": "10799118397"})
-        
+
         # Remove apenas as dívidas do cliente de teste se ele existia
         if cliente_existente:
             await db.dividas.delete_many({"cliente_id": cliente_existente["_id"]})
