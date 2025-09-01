@@ -1172,9 +1172,12 @@ async def cancelar_boleto(
 
         try:
             if redis_cache and boleto.get("cliente_id"):
-                cliente_doc = await db.clientes.find_one({"_id": boleto.get("cliente_id")})
+                cliente_doc = await db.clientes.find_one(
+                    {"_id": boleto.get("cliente_id")}
+                )
                 if cliente_doc and cliente_doc.get("cpf"):
-                    await redis_cache.delete(f"cliente:cpf:{normalize_cpf(cliente_doc.get('cpf'))}")
+                    cpf_normalizado = normalize_cpf(cliente_doc.get('cpf'))
+                    await redis_cache.delete(f"cliente:cpf:{cpf_normalizado}")
         except Exception:
             pass
 
@@ -1184,7 +1187,11 @@ async def cancelar_boleto(
             data_cancelamento=data_cancelamento.strftime("%Y-%m-%d %H:%M:%S"),
             dividas_restauradas=dividas_restauradas,
             historico_preservado=True,
-            message=f"Boleto cancelado com sucesso! {len(dividas_restauradas)} dívida(s) restaurada(s) ao estado original.",
+            message=(
+                f"Boleto cancelado com sucesso! "
+                f"{len(dividas_restauradas)} dívida(s) restaurada(s) "
+                f"ao estado original."
+            ),
         )
     except HTTPException:
         raise
