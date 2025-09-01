@@ -176,6 +176,9 @@ class PagamentoStatusResponse(BaseModel):
     status: str
     data_processamento: str
     mensagem: str
+    valor: Optional[float] = None
+    data_pagamento: Optional[str] = None
+    message: Optional[str] = None
 
 
 # --- Configuração ---
@@ -1419,8 +1422,10 @@ async def status_pagamento(request: Request, id_pagamento: str):
     status = random.choice(status_options)
 
     return PagamentoStatusResponse(
-        id=id_pagamento,
+        pagamento_id=id_pagamento,
         status=status,
+        data_processamento=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        mensagem="Status consultado com sucesso",
         valor=random.uniform(10.0, 1000.0),
         data_pagamento=(
             datetime.now().strftime("%Y-%m-%d %H:%M:%S")
