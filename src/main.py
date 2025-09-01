@@ -1368,6 +1368,275 @@ async def login(
     )
 
 
+@app.post("/admin/populate-multiple-clients",
+          tags=["Admin"],
+          summary="Popula múltiplos clientes com dívidas",
+          description="Endpoint administrativo para popular múltiplos clientes "
+                      "de teste com diferentes perfis de dívidas")
+async def populate_multiple_clients_endpoint(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Endpoint administrativo para popular múltiplos clientes de teste
+
+    Cria vários clientes com diferentes perfis de dívidas para testes mais abrangentes
+    """
+    try:
+        if not mongo_provider:
+            raise HTTPException(
+                status_code=500, detail="Banco de dados indisponível"
+            )
+
+        db = mongo_provider.db
+        from bson.decimal128 import Decimal128
+
+        # Lista de clientes para criar
+        clientes_teste = [
+            {
+                "nome": "João Silva Santos",
+                "cpf": "12345678901",
+                "email": "joao.silva@email.com",
+                "telefone": "+55 (11) 9999-1234",
+                "data_nascimento": "1985-03-15",
+                "endereco": {
+                    "rua": "Rua das Flores, 123",
+                    "cidade": "São Paulo",
+                    "estado": "SP",
+                    "cep": "01234-567",
+                    "numero": "123",
+                    "complemento": "Apt 45"
+                },
+                "dividas": [
+                    {
+                        "tipo": "cartao_credito",
+                        "descricao": "Cartão Visa - Banco do Brasil",
+                        "valor_original": Decimal128("800.00"),
+                        "valor_atual": Decimal128("920.00"),
+                        "status": "vencido",
+                        "dias_atraso": 8,
+                        "juros_mes": Decimal128("3.5"),
+                        "multa": Decimal128("120.00")
+                    },
+                    {
+                        "tipo": "emprestimo",
+                        "descricao": "Crediário Loja ABC",
+                        "valor_original": Decimal128("1200.00"),
+                        "valor_atual": Decimal128("1200.00"),
+                        "status": "ativo",
+                        "dias_atraso": 0,
+                        "juros_mes": Decimal128("2.9"),
+                        "multa": Decimal128("0.00")
+                    }
+                ]
+            },
+            {
+                "nome": "Maria Oliveira Costa",
+                "cpf": "98765432109",
+                "email": "maria.costa@email.com",
+                "telefone": "+55 (21) 8888-5678",
+                "data_nascimento": "1992-07-22",
+                "endereco": {
+                    "rua": "Avenida Atlântica, 456",
+                    "cidade": "Rio de Janeiro",
+                    "estado": "RJ",
+                    "cep": "22070-011",
+                    "numero": "456",
+                    "complemento": None
+                },
+                "dividas": [
+                    {
+                        "tipo": "financiamento",
+                        "descricao": "Financiamento Moto - Honda",
+                        "valor_original": Decimal128("8500.00"),
+                        "valor_atual": Decimal128("9200.00"),
+                        "status": "inadimplente",
+                        "dias_atraso": 62,
+                        "juros_mes": Decimal128("1.8"),
+                        "multa": Decimal128("700.00")
+                    }
+                ]
+            },
+            {
+                "nome": "Carlos Eduardo Mendes",
+                "cpf": "11122233344",
+                "email": "carlos.mendes@email.com",
+                "telefone": "+55 (31) 7777-9012",
+                "data_nascimento": "1978-12-05",
+                "endereco": {
+                    "rua": "Rua da Liberdade, 789",
+                    "cidade": "Belo Horizonte",
+                    "estado": "MG",
+                    "cep": "30112-000",
+                    "numero": "789",
+                    "complemento": "Casa"
+                },
+                "dividas": [
+                    {
+                        "tipo": "cartao_credito",
+                        "descricao": "Cartão Mastercard - Itaú",
+                        "valor_original": Decimal128("2500.00"),
+                        "valor_atual": Decimal128("3100.00"),
+                        "status": "inadimplente",
+                        "dias_atraso": 95,
+                        "juros_mes": Decimal128("4.2"),
+                        "multa": Decimal128("600.00")
+                    },
+                    {
+                        "tipo": "emprestimo",
+                        "descricao": "Empréstimo Consignado",
+                        "valor_original": Decimal128("5500.00"),
+                        "valor_atual": Decimal128("5800.00"),
+                        "status": "vencido",
+                        "dias_atraso": 23,
+                        "juros_mes": Decimal128("1.5"),
+                        "multa": Decimal128("300.00")
+                    },
+                    {
+                        "tipo": "cheque_especial",
+                        "descricao": "Cheque Especial - Conta Corrente",
+                        "valor_original": Decimal128("450.00"),
+                        "valor_atual": Decimal128("520.00"),
+                        "status": "ativo",
+                        "dias_atraso": 0,
+                        "juros_mes": Decimal128("8.5"),
+                        "multa": Decimal128("0.00")
+                    }
+                ]
+            },
+            {
+                "nome": "Ana Paula Ferreira",
+                "cpf": "55566677788",
+                "email": "ana.ferreira@email.com",
+                "telefone": "+55 (85) 6666-3456",
+                "data_nascimento": "1989-09-18",
+                "endereco": {
+                    "rua": "Rua do Sol, 321",
+                    "cidade": "Fortaleza",
+                    "estado": "CE",
+                    "cep": "60000-123",
+                    "numero": "321",
+                    "complemento": "Bloco B"
+                },
+                "dividas": [
+                    {
+                        "tipo": "financiamento",
+                        "descricao": "Financiamento Imobiliário - Caixa",
+                        "valor_original": Decimal128("45000.00"),
+                        "valor_atual": Decimal128("48500.00"),
+                        "status": "ativo",
+                        "dias_atraso": 0,
+                        "juros_mes": Decimal128("0.8"),
+                        "multa": Decimal128("0.00")
+                    },
+                    {
+                        "tipo": "cartao_credito",
+                        "descricao": "Cartão American Express",
+                        "valor_original": Decimal128("1800.00"),
+                        "valor_atual": Decimal128("2050.00"),
+                        "status": "vencido",
+                        "dias_atraso": 12,
+                        "juros_mes": Decimal128("2.8"),
+                        "multa": Decimal128("250.00")
+                    }
+                ]
+            }
+        ]
+
+        clientes_criados = []
+        total_dividas_criadas = 0
+
+        for cliente_info in clientes_teste:
+            # Remove cliente existente se houver
+            await db.clientes.delete_many({"cpf": cliente_info["cpf"]})
+
+            # Busca dívidas antigas para deletar
+            cliente_existente = await db.clientes.find_one({"cpf": cliente_info["cpf"]})
+            if cliente_existente:
+                await db.dividas.delete_many({"cliente_id": cliente_existente["_id"]})
+
+            # Cria dados do cliente
+            cliente_data = {
+                "_id": ObjectId(),
+                "nome": cliente_info["nome"],
+                "cpf": cliente_info["cpf"],
+                "email": cliente_info["email"],
+                "telefone": cliente_info["telefone"],
+                "data_nascimento": cliente_info["data_nascimento"],
+                "endereco": cliente_info["endereco"],
+                "status": "ativo",
+                "score_credito": None,
+                "limite_credito": None,
+                "created_at": datetime.now(),
+                "updated_at": datetime.now()
+            }
+
+            resultado_cliente = await db.clientes.insert_one(cliente_data)
+            cliente_id = resultado_cliente.inserted_id
+
+            # Cria dívidas do cliente
+            dividas_data = []
+            for divida_info in cliente_info["dividas"]:
+                # Calcula data de vencimento baseada no status
+                if divida_info["status"] == "ativo":
+                    data_vencimento = datetime.now() + timedelta(days=30)
+                elif divida_info["status"] == "vencido":
+                    data_vencimento = datetime.now() - timedelta(
+                        days=divida_info["dias_atraso"]
+                    )
+                else:  # inadimplente
+                    data_vencimento = datetime.now() - timedelta(
+                        days=divida_info["dias_atraso"]
+                    )
+
+                divida_data = {
+                    "_id": ObjectId(),
+                    "cliente_id": cliente_id,
+                    "tipo": divida_info["tipo"],
+                    "descricao": divida_info["descricao"],
+                    "valor_original": divida_info["valor_original"],
+                    "valor_atual": divida_info["valor_atual"],
+                    "status": divida_info["status"],
+                    "data_vencimento": data_vencimento,
+                    "dias_atraso": divida_info["dias_atraso"],
+                    "juros_mes": divida_info["juros_mes"],
+                    "multa": divida_info["multa"],
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now()
+                }
+                dividas_data.append(divida_data)
+
+            if dividas_data:
+                await db.dividas.insert_many(dividas_data)
+                total_dividas_criadas += len(dividas_data)
+
+            clientes_criados.append({
+                "nome": cliente_info["nome"],
+                "cpf": cliente_info["cpf"],
+                "total_dividas": len(dividas_data),
+                "valor_total": sum(
+                    float(d["valor_atual"].to_decimal()) for d in dividas_data
+                )
+            })
+
+        return {
+            "success": True,
+            "message": (
+                f"Criados {len(clientes_criados)} clientes com "
+                f"{total_dividas_criadas} dívidas!"
+            ),
+            "clientes_criados": clientes_criados,
+            "total_clientes": len(clientes_criados),
+            "total_dividas": total_dividas_criadas
+        }
+
+    except Exception as e:
+        logger.error(f"Erro ao popular múltiplos clientes: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao popular dados: {str(e)}"
+        )
+
+
 @app.post("/admin/populate-test-data",
           tags=["Admin"],
           summary="Popula dados de teste",
