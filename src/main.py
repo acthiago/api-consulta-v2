@@ -326,13 +326,13 @@ async def lifespan(app: FastAPI):
         if redis_cache:
             try:
                 await redis_cache.disconnect()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Error disconnecting Redis: {e}")
         if mongo_provider:
             try:
                 await mongo_provider.disconnect()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Error disconnecting MongoDB: {e}")
         logger.info("👋 Application shutdown complete")
 
 
@@ -1041,8 +1041,8 @@ async def gerar_boleto(
             if redis_cache:
                 cpf_normalized = normalize_cpf(request.cliente_cpf)
                 await redis_cache.delete(f"cliente:cpf:{cpf_normalized}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error invalidating cache: {e}")
 
         return BoletoGeradoResponse(
             id=str(resultado.inserted_id),
@@ -1135,9 +1135,10 @@ async def cancelar_boleto(
                 if isinstance(dv, str):
                     try:
                         dv = datetime.strptime(dv, "%Y-%m-%d")
-                    except Exception:
-                        pass
-                if hasattr(dv, "__class__"):
+                    except Exception as e:
+                        logger.warning(f"Error parsing date {dv}: {e}")
+                        dv = None
+                if dv and hasattr(dv, "__class__"):
                     dias_vencido = (datetime.now() - dv).days
                     if dias_vencido > 0:
                         if dias_vencido <= 30:
@@ -1178,8 +1179,8 @@ async def cancelar_boleto(
                 if cliente_doc and cliente_doc.get("cpf"):
                     cpf_normalizado = normalize_cpf(cliente_doc.get('cpf'))
                     await redis_cache.delete(f"cliente:cpf:{cpf_normalizado}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error invalidating cache during cancellation: {e}")
 
         return BoletoCanceladoResponse(
             boleto_id=boleto_id,
