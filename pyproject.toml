@@ -75,3 +75,9 @@ exclude_lines = [
     "if 0:",
     "if __name__ == .__main__.:",
 ]
+
+[tool.pip-audit]
+ignore-vulns = [
+    "GHSA-wj6h-64fc-37mp",  # ecdsa vulnerability with no fix available
+]
+desc = true
