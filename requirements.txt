@@ -1,6 +1,7 @@
 # Web Framework
 fastapi==0.115.0
 uvicorn[standard]==0.24.0
+starlette==0.47.2
 
 # Database
 pymongo==4.10.1
@@ -12,7 +13,7 @@ aioredis==2.0.1
 
 # Security
 passlib[bcrypt]==1.7.4
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 python-multipart==0.0.20
 
 # Configuration

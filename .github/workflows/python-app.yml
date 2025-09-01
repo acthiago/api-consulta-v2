@@ -77,10 +77,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 🔍 Security audit (Safety)
+      - name: 🔍 Security audit (pip-audit)
         run: |
-          pip install safety
-          safety check -r requirements.txt --ignore 70715 --ignore 70716
+          pip install pip-audit
+          pip-audit -r requirements.txt
 
       - name: 🛡️ Security scan (Bandit)
         run: |

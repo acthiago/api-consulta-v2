@@ -1,0 +1,13 @@
+{
+  "security": {
+    "ignore-unpinned-requirements": false,
+    "ignore-risks": {
+      "70715": "This vulnerability affects Pillow < 10.4.0 but we're using 10.4.0",
+      "70716": "This vulnerability affects certain configurations not applicable to our use case"
+    }
+  },
+  "report": {
+    "fail-on": ["security"],
+    "output": ["screen", "json"]
+  }
+}
