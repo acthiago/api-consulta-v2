@@ -1,7 +1,6 @@
 # Web Framework
-fastapi==0.115.0
+fastapi==0.116.1
 uvicorn[standard]==0.24.0
-starlette==0.47.2
 
 # Database
 pymongo==4.10.1
