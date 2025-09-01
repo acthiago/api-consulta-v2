@@ -2,172 +2,40 @@
 API de Consulta de Boletos - v2
 Arquitetura Hexagonal com segurança e performance aprimoradas
 """
-
-import random
 import re
 import time
+import random
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-import structlog
+import jwt
 import uvicorn
 from bson import ObjectId
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
-from pydantic import BaseModel
+from jose import JWTError
+from passlib.context import CryptContext
+from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
+                               generate_latest)
 from pymongo import MongoClient
+from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+import structlog
 
-from src.config.settings import Settings
+from src.config.settings import get_settings
+from src.infra.cache.redis_cache import RedisCache
+from src.infra.db.mongo import MongoProvider
+from src.infra.repositories.cliente_repository import ClienteRepository
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer(),
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-logger = structlog.get_logger()
-
-# Pydantic Models
-
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
-    expires_in: int
-    message: Optional[str] = None
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "token_type": "bearer",
-                "expires_in": 1800,
-                "message": "Login realizado com sucesso"
-            }
-        }
-
-
-class ErrorResponse(BaseModel):
-    detail: str
-    error_code: Optional[str] = None
-
-
-class ClienteResponse(BaseModel):
-    cpf: str
-    nome: str
-    email: Optional[str] = None
-    telefone: Optional[str] = None
-    data_nascimento: Optional[str] = None
-    status: str
-    endereco: Optional[dict] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-
-class DividaResponse(BaseModel):
-    id: str
-    # "emprestimo", "cartao_credito", "cheque_especial", "financiamento", "outros"
-    tipo: str
-    descricao: str
-    valor_original: float
-    valor_atual: float  # Com juros, multas, etc.
-    data_vencimento: str
-    dias_atraso: int
-    status: str  # "ativo", "vencido", "negociado", "quitado"
-    juros_mes: Optional[float] = None
-    multa: Optional[float] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-
-class BoletoResponse(BaseModel):
-    id: str
-    numero_boleto: str
-    divida_id: Optional[str] = None  # Referência à dívida que gerou este boleto
-    valor: float
-    data_vencimento: str
-    linha_digitavel: str
-    codigo_barras: str
-    banco: str
-    status: str  # "ativo", "pago", "cancelado", "vencido"
-    url_pagamento: Optional[str] = None
-
-
-class DividasClienteResponse(BaseModel):
-    cliente_cpf: str
-    cliente_nome: str
-    total_dividas: int
-    valor_total_original: float
-    valor_total_atual: float  # Com juros e multas
-    dividas_ativas: int
-    dividas_vencidas: int
-    dividas: List[DividaResponse]
-
-
-class BoletoRequest(BaseModel):
-    cliente_cpf: str
-    dividas_ids: List[str]  # IDs das dívidas para incluir no boleto
-    parcelas: int = 1  # Número de parcelas (1 a 5)
-    descricao: Optional[str] = "Pagamento de dívidas"
-
-
-class BoletoGeradoResponse(BaseModel):
-    id: str
-    numero_boleto: str
-    valor_total: float
-    valor_parcela: float
-    parcelas: int
-    data_vencimento: str
-    linha_digitavel: str
-    codigo_barras: str
-    banco: str
-    url_pagamento: str
-    dividas_incluidas: List[str]  # IDs das dívidas incluídas
-    message: str
-
-
-class PagamentoStatusResponse(BaseModel):
-    id: str
-    status: str
-    valor: Optional[float] = None
-    data_pagamento: Optional[str] = None
-    message: Optional[str] = None
-
-
-class BoletoCanceladoResponse(BaseModel):
-    boleto_id: str
-    status: str
-    data_cancelamento: str
-    dividas_restauradas: List[str]  # IDs das dívidas que voltaram ao estado original
-    historico_preservado: bool
-    message: str
+# --- Models (DTOs) ---
+# Geralmente, estes modelos estariam em seus próprios arquivos (ex: src/domain/dtos.py)
+# mas para simplificar, estão aqui.
 
 
 class HealthResponse(BaseModel):
@@ -188,29 +56,156 @@ class ApiInfoResponse(BaseModel):
     environment: str
 
 
-# Metrics
-REQUEST_COUNT = Counter(
-    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"]
+class ClienteResponse(BaseModel):
+    id: str
+    nome: str
+    cpf: str
+    email: str
+    telefone: str
+    data_cadastro: str
+    score_credito: int
+    limite_credito: float
+    dividas_ativas: int
+    valor_total_dividas: float
+
+
+class DividaResponse(BaseModel):
+    id: str
+    valor: float
+    status: str
+    data_vencimento: str
+    descricao: str
+
+
+class DividasClienteResponse(BaseModel):
+    cliente_id: str
+    total_dividas: int
+    valor_total: float
+    dividas: List[DividaResponse]
+
+
+class BoletoResponse(BaseModel):
+    id: str
+    numero_boleto: str
+    divida_id: Optional[str] = None
+    valor: float
+    data_vencimento: str
+    linha_digitavel: str
+    codigo_barras: str
+    banco: str
+    status: str
+    url_pagamento: str
+
+
+class BoletoRequest(BaseModel):
+    cliente_cpf: str
+    dividas_ids: List[str]
+    parcelas: int = 1
+    descricao: Optional[str] = "Negociação de dívidas"
+
+
+class BoletoGeradoResponse(BaseModel):
+    id: str
+    numero_boleto: str
+    valor_total: float
+    valor_parcela: float
+    parcelas: int
+    data_vencimento: str
+    linha_digitavel: str
+    codigo_barras: str
+    banco: str
+    url_pagamento: str
+    dividas_incluidas: List[str]
+    message: str
+
+
+class BoletoCanceladoResponse(BaseModel):
+    boleto_id: str
+    status: str
+    data_cancelamento: str
+    dividas_restauradas: List[str]
+    historico_preservado: bool
+    message: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class ErrorResponse(BaseModel):
+    message: str
+    status_code: int
+    timestamp: float
+    path: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class PagamentoStatusResponse(BaseModel):
+    pagamento_id: str
+    status: str
+    data_processamento: str
+    mensagem: str
+
+
+# --- Configuração ---
+settings = get_settings()
+
+# Logger
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer(),
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
 )
-REQUEST_LATENCY = Histogram("http_request_duration_seconds", "HTTP request latency")
-ACTIVE_CONNECTIONS = Counter("active_connections_total", "Active connections")
+logger = structlog.get_logger()
 
 # Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
 
-# MongoDB Connection
+# Security
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-settings = Settings()
+# --- Variáveis Globais ---
+mongo_provider: Optional[MongoProvider] = None
+redis_cache: Optional[RedisCache] = None
+
+# --- Métricas Prometheus ---
+REQUEST_COUNT = Counter(
+    "request_count",
+    "App Request Count",
+    ["method", "endpoint", "status"],
+)
+REQUEST_LATENCY = Histogram(
+    "request_latency_seconds",
+    "Request latency",
+    ["endpoint"]
+)
+ACTIVE_SESSIONS = Gauge(
+    "active_sessions",
+    "Number of active user sessions"
+)
+
+# --- Funções de Autenticação ---
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Create JWT access token"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = (datetime.utcnow() +
-                  timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
+        expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM
@@ -219,7 +214,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 def verify_token(token: str):
-    """Verify JWT token"""
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
@@ -227,17 +221,18 @@ def verify_token(token: str):
         username: str = payload.get("sub")
         if username is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
+                status_code=401, detail="Token inválido: sem 'sub'"
             )
         return username
     except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=401, detail="Token inválido ou expirado"
         )
+
+
+def normalize_cpf(cpf: str) -> str:
+    """Remove todos os caracteres não numéricos do CPF"""
+    return re.sub(r'[^\d]', '', cpf)
 
 
 def get_mongodb_connection():
@@ -301,6 +296,20 @@ async def lifespan(app: FastAPI):
 
     try:
         # Initialize components here (database, cache, etc.)
+        global mongo_provider, redis_cache
+        mongo_provider = MongoProvider(settings)
+        await mongo_provider.connect()
+
+        redis_cache = RedisCache(settings)
+        await redis_cache.connect()
+
+        # Optionally ensure indexes
+        if settings.AUTO_CREATE_INDEXES:
+            try:
+                from scripts.migrations._runner import ensure_indexes
+                await ensure_indexes()
+            except Exception as e:  # pragma: no cover - best-effort
+                logger.warning("Falha ao garantir índices", error=str(e))
         logger.info("✅ Application started successfully")
         yield
 
@@ -309,6 +318,16 @@ async def lifespan(app: FastAPI):
         raise
     finally:
         logger.info("🛑 Shutting down application")
+        if redis_cache:
+            try:
+                await redis_cache.disconnect()
+            except Exception:
+                pass
+        if mongo_provider:
+            try:
+                await mongo_provider.disconnect()
+            except Exception:
+                pass
         logger.info("👋 Application shutdown complete")
 
 
@@ -431,16 +450,42 @@ async def health_check():
          response_model=HealthResponse)
 async def detailed_health_check():
     """Detailed health check with dependencies"""
-    # TODO: Implement real database and cache checks
+    checks = {"database": "unknown", "cache": "unknown"}
+    overall = "healthy"
+    # Mongo
+    try:
+        if mongo_provider:
+            await mongo_provider.db.command("ping")
+            checks["database"] = "healthy"
+        else:
+            checks["database"] = "unavailable"
+            overall = "degraded"
+    except Exception as e:  # pragma: no cover
+        checks["database"] = f"unhealthy: {str(e)}"
+        overall = "unhealthy"
+
+    # Redis
+    try:
+        if redis_cache and redis_cache._pool:
+            pong = await redis_cache._pool.ping()
+            checks["cache"] = "healthy" if pong else "unhealthy"
+            if not pong:
+                overall = "degraded"
+        else:
+            if settings.CACHE_ENABLED is False:
+                checks["cache"] = "disabled"
+            else:
+                checks["cache"] = "unavailable"
+    except Exception as e:  # pragma: no cover
+        checks["cache"] = f"unhealthy: {str(e)}"
+        overall = "degraded"
+
     return HealthResponse(
-        status="healthy",
+        status=overall,
         timestamp=time.time(),
         version=settings.APP_VERSION,
         environment=settings.ENVIRONMENT,
-        checks={
-            "database": "healthy",  # TODO: Implement real database check
-            "cache": "healthy",  # TODO: Implement real cache check
-        }
+        checks=checks,
     )
 
 
@@ -538,14 +583,11 @@ async def buscar_cliente(
                 detail="CPF inválido"
             )
 
-        # Conecta ao MongoDB
-        db = get_mongodb_connection()
-
-        # Remove formatação do CPF para busca
-        cpf_numerico = re.sub(r'[^\d]', '', cpf)
-
-        # Busca o cliente na coleção
-        cliente = db.clientes.find_one({"cpf": cpf_numerico})
+        # Usa repositório assíncrono com cache
+        if not mongo_provider:
+            raise HTTPException(status_code=500, detail="Banco de dados indisponível")
+        repo = ClienteRepository(mongo_provider.db, cache=redis_cache)
+        cliente = await repo.get_by_cpf(cpf)
 
         if not cliente:
             raise HTTPException(
@@ -555,7 +597,7 @@ async def buscar_cliente(
 
         # Formata os dados para retorno
         return ClienteResponse(
-            id=str(cliente["_id"]),
+            id=str(cliente.get("_id", "")),
             nome=cliente.get("nome", ""),
             cpf=cliente.get("cpf", ""),
             email=cliente.get("email", ""),
@@ -563,10 +605,14 @@ async def buscar_cliente(
             data_nascimento=cliente.get("data_nascimento", ""),
             endereco=cliente.get("endereco", {}),
             status=cliente.get("status", "ativo"),
-            created_at=str(cliente.get("created_at", "")
-                           ) if cliente.get("created_at") else "",
-            updated_at=str(cliente.get("updated_at", "")
-                           ) if cliente.get("updated_at") else ""
+            created_at=(
+                str(cliente.get("created_at", ""))
+                if cliente.get("created_at") else ""
+            ),
+            updated_at=(
+                str(cliente.get("updated_at", ""))
+                if cliente.get("updated_at") else ""
+            )
         )
 
     except HTTPException:
@@ -602,14 +648,11 @@ async def consultar_dividas_cliente(
                 detail="CPF inválido"
             )
 
-        # Conecta ao MongoDB
-        db = get_mongodb_connection()
-
-        # Remove formatação do CPF para busca
-        cpf_numerico = re.sub(r'[^\d]', '', cpf)
-
-        # Busca o cliente na coleção
-        cliente = db.clientes.find_one({"cpf": cpf_numerico})
+        # Busca o cliente via repositório com cache
+        if not mongo_provider:
+            raise HTTPException(status_code=500, detail="Banco de dados indisponível")
+        repo = ClienteRepository(mongo_provider.db, cache=redis_cache)
+        cliente = await repo.get_by_cpf(cpf)
 
         if not cliente:
             raise HTTPException(
@@ -617,9 +660,14 @@ async def consultar_dividas_cliente(
                 detail=f"Cliente com CPF {cpf} não encontrado"
             )
 
-        # Busca todas as dívidas do cliente
-        dividas_cursor = db.dividas.find({"cliente_id": cliente["_id"]})
-        dividas_list = list(dividas_cursor)
+        # Busca todas as dívidas do cliente (assíncrono)
+        from bson import ObjectId as _ObjectId
+        if isinstance(cliente["_id"], str):
+            cliente_oid = _ObjectId(cliente["_id"])
+        else:
+            cliente_oid = cliente["_id"]
+        cursor = mongo_provider.db.dividas.find({"cliente_id": cliente_oid})
+        dividas_list = await cursor.to_list(length=1000)
 
         # Converte as dívidas para o formato de resposta
         dividas_formatadas = []
@@ -716,14 +764,11 @@ async def consultar_boletos_cliente(
                 detail="CPF inválido"
             )
 
-        # Conecta ao MongoDB
-        db = get_mongodb_connection()
-
-        # Remove formatação do CPF para busca
-        cpf_numerico = re.sub(r'[^\d]', '', cpf)
-
-        # Busca o cliente na coleção
-        cliente = db.clientes.find_one({"cpf": cpf_numerico})
+        # Busca o cliente via repositório
+        if not mongo_provider:
+            raise HTTPException(status_code=500, detail="Banco de dados indisponível")
+        repo = ClienteRepository(mongo_provider.db, cache=redis_cache)
+        cliente = await repo.get_by_cpf(cpf)
 
         if not cliente:
             raise HTTPException(
@@ -731,9 +776,14 @@ async def consultar_boletos_cliente(
                 detail=f"Cliente com CPF {cpf} não encontrado"
             )
 
-        # Busca todos os boletos do cliente
-        boletos_cursor = db.boletos.find({"cliente_id": cliente["_id"]})
-        boletos_list = list(boletos_cursor)
+        # Busca todos os boletos do cliente (assíncrono)
+        from bson import ObjectId as _ObjectId
+        if isinstance(cliente["_id"], str):
+            cliente_oid = _ObjectId(cliente["_id"])
+        else:
+            cliente_oid = cliente["_id"]
+        cursor = mongo_provider.db.boletos.find({"cliente_id": cliente_oid})
+        boletos_list = await cursor.to_list(length=1000)
 
         boletos_formatados = []
 
@@ -778,7 +828,7 @@ async def consultar_boletos_cliente(
 @app.post("/api/v1/boleto/gerar", response_model=BoletoGeradoResponse, tags=["Boletos"])
 async def gerar_boleto(
     request: BoletoRequest,
-    current_user: str = Depends(get_current_user)
+    current_user: str = Depends(get_current_user),
 ):
     """
     Gera um boleto para pagamento de uma ou mais dívidas
@@ -817,14 +867,14 @@ async def gerar_boleto(
                 detail="CPF inválido"
             )
 
-        # Conecta ao MongoDB
-        db = get_mongodb_connection()
-
-        # Remove formatação do CPF para busca
-        cpf_numerico = re.sub(r'[^\d]', '', request.cliente_cpf)
+        # Conecta ao MongoDB (assíncrono)
+        if not mongo_provider:
+            raise HTTPException(status_code=500, detail="Banco de dados indisponível")
+        db = mongo_provider.db
 
         # Busca o cliente
-        cliente = db.clientes.find_one({"cpf": cpf_numerico})
+        cpf_numerico = re.sub(r'[^\d]', '', request.cliente_cpf)
+        cliente = await db.clientes.find_one({"cpf": cpf_numerico})
         if not cliente:
             raise HTTPException(
                 status_code=404,
@@ -841,10 +891,11 @@ async def gerar_boleto(
             )
 
         # Busca as dívidas especificadas
-        dividas = list(db.dividas.find({
+        cursor = db.dividas.find({
             "_id": {"$in": dividas_object_ids},
             "cliente_id": cliente["_id"]
-        }))
+        })
+        dividas = await cursor.to_list(length=1000)
 
         if len(dividas) != len(request.dividas_ids):
             raise HTTPException(
@@ -863,7 +914,7 @@ async def gerar_boleto(
                 continue
 
             # Verifica se já existe boleto ativo para esta dívida
-            boleto_existente = db.boletos.find_one({
+            boleto_existente = await db.boletos.find_one({
                 "divida_id": divida["_id"],
                 "status": {"$in": ["ativo", "pendente"]}
             })
@@ -931,12 +982,9 @@ async def gerar_boleto(
         cb_min = 10000000000000000000000000000000000000000
         cb_max = 99999999999999999999999999999999999999999
         codigo_barras = f"{random.randint(cb_min, cb_max):044d}"
-
         banco = random.choice(["001", "033", "104", "237", "341", "399"])
 
-        # Importa timedelta localmente
-        data_vencimento = (datetime.now() +
-                           datetime.timedelta(days=7))  # 7 dias
+        data_vencimento = datetime.now() + timedelta(days=7)
 
         # Cria o boleto no banco
         from bson.decimal128 import Decimal128
@@ -964,10 +1012,10 @@ async def gerar_boleto(
             "updated_at": datetime.now()
         }
 
-        resultado = db.boletos.insert_one(boleto_data)
+        resultado = await db.boletos.insert_one(boleto_data)
 
         # Atualiza status das dívidas para "negociado"
-        db.dividas.update_many(
+        await db.dividas.update_many(
             {"_id": {"$in": dividas_object_ids}},
             {
                 "$set": {
@@ -979,7 +1027,17 @@ async def gerar_boleto(
         )
 
         numero_boleto_clean = numero_boleto.replace(' ', '')
-        parcelas_info = f"{request.parcelas} parcela(s) de R$ {valor_parcela:.2f}"
+        parcelas_info = (
+            f"{request.parcelas} parcela(s) de R$ {valor_parcela:.2f}"
+        )
+
+        # Invalida cache do cliente (se habilitado)
+        try:
+            if redis_cache:
+                cpf_normalized = normalize_cpf(request.cliente_cpf)
+                await redis_cache.delete(f"cliente:cpf:{cpf_normalized}")
+        except Exception:
+            pass
 
         return BoletoGeradoResponse(
             id=str(resultado.inserted_id),
@@ -1006,147 +1064,114 @@ async def gerar_boleto(
         )
 
 
-@app.post("/api/v1/boleto/{boleto_id}/cancelar",
-          response_model=BoletoCanceladoResponse,
-          tags=["Boletos"])
+@app.post(
+    "/api/v1/boleto/{boleto_id}/cancelar",
+    response_model=BoletoCanceladoResponse,
+    tags=["Boletos"]
+)
 async def cancelar_boleto(
-        boleto_id: str,
-        current_user: dict = Depends(get_current_user)):
-    """
-    Cancelar boleto e restaurar dívidas
-
-    Cancela um boleto existente e restaura as dívidas ao estado original,
-    preservando todo o histórico da negociação.
-    """
+    boleto_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Cancela um boleto e restaura as dívidas ao estado original."""
     try:
-        # Conexão com MongoDB
-        db = get_mongodb_connection()
+        if not mongo_provider:
+            raise HTTPException(status_code=500, detail="Banco de dados indisponível")
+        db = mongo_provider.db
 
-        # Verifica se o boleto existe
         try:
             boleto_object_id = ObjectId(boleto_id)
-        except BaseException:
-            raise HTTPException(
-                status_code=400,
-                detail="ID do boleto inválido"
-            )
+        except Exception:
+            raise HTTPException(status_code=400, detail="ID do boleto inválido")
 
-        boleto = db.boletos.find_one({"_id": boleto_object_id})
-
+        boleto = await db.boletos.find_one({"_id": boleto_object_id})
         if not boleto:
-            raise HTTPException(
-                status_code=404,
-                detail="Boleto não encontrado"
-            )
-
-        # Verifica se o boleto pode ser cancelado
+            raise HTTPException(status_code=404, detail="Boleto não encontrado")
         if boleto.get("status") in ["pago", "cancelado"]:
-            status_boleto = boleto.get('status')
+            status_atual = boleto.get('status')
             raise HTTPException(
                 status_code=400,
-                detail=f"Boleto não pode ser cancelado. Status atual: {status_boleto}"
+                detail=(
+                    f"Boleto não pode ser cancelado. "
+                    f"Status atual: {status_atual}"
+                )
             )
 
-        # Busca as dívidas associadas ao boleto
-        dividas_associadas = list(db.dividas.find({
-            "boleto_id": boleto_object_id
-        }))
-
+        dividas_associadas = await db.dividas.find(
+            {"boleto_id": boleto_object_id}
+        ).to_list(length=1000)
         if not dividas_associadas:
             raise HTTPException(
                 status_code=404,
-                detail="Nenhuma dívida associada encontrada para este boleto"
+                detail=(
+                    "Nenhuma dívida associada encontrada para este boleto"
+                )
             )
 
         data_cancelamento = datetime.now()
-
-        # Inicia transação para garantir consistência
-        with db.client.start_session() as session:
-            with session.start_transaction():
-
-                # 1. Atualiza o status do boleto para cancelado
-                db.boletos.update_one(
-                    {"_id": boleto_object_id},
-                    {
-                        "$set": {
-                            "status": "cancelado",
-                            "data_cancelamento": data_cancelamento,
-                            "cancelado_por": current_user.get("username", "sistema"),
-                            "updated_at": data_cancelamento
-                        }
-                    },
-                    session=session
-                )
-
-                # 2. Restaura as dívidas ao estado original
-                dividas_ids = [divida["_id"] for divida in dividas_associadas]
-                dividas_restauradas = []
-
-                for divida in dividas_associadas:
-                    # Define o status original baseado na data de vencimento
-                    status_original = "ativo"
-                    data_vencimento = divida.get("data_vencimento")
-
-                    if data_vencimento:
-                        if isinstance(data_vencimento, str):
-                            data_vencimento = datetime.strptime(
-                                data_vencimento, "%Y-%m-%d")
-
-                        dias_vencido = (datetime.now() - data_vencimento).days
-
-                        if dias_vencido > 0:
-                            if dias_vencido <= 30:
-                                status_original = "vencido"
-                            else:
-                                status_original = "inadimplente"
-
-                    # Atualiza a dívida
-                    db.dividas.update_one(
-                        {"_id": divida["_id"]},
-                        {
-                            "$set": {
-                                "status": status_original,
-                                "updated_at": data_cancelamento
-                            },
-                            "$unset": {
-                                "boleto_id": ""
-                            }
-                        },
-                        session=session
-                    )
-
-                    dividas_restauradas.append(str(divida["_id"]))
-
-                # 3. Registra o cancelamento no histórico/auditoria
-                auditoria_data = {
-                    "acao": "cancelamento_boleto",
-                    "boleto_id": boleto_object_id,
-                    "dividas_restauradas": dividas_ids,
-                    "usuario": current_user.get("username", "sistema"),
-                    "data": data_cancelamento,
-                    "detalhes": {
-                        "boleto_numero": boleto.get("numero_boleto"),
-                        "valor_total": boleto.get("valor_total"),
-                        "motivo": "cancelamento_solicitado"
-                    }
+        await db.boletos.update_one(
+            {"_id": boleto_object_id},
+            {
+                "$set": {
+                    "status": "cancelado",
+                    "data_cancelamento": data_cancelamento,
+                    "cancelado_por": current_user.get("username", "sistema"),
+                    "updated_at": data_cancelamento
                 }
-
-                db.auditoria.insert_one(auditoria_data, session=session)
-
-        logger.info(
-            "Boleto cancelado com sucesso",
-            boleto_id=boleto_id,
-            dividas_restauradas=len(dividas_restauradas),
-            usuario=current_user.get("username")
+            }
         )
 
-        num_dividas = len(dividas_restauradas)
+        dividas_ids = [d["_id"] for d in dividas_associadas]
+        dividas_restauradas = []
+        for d in dividas_associadas:
+            status_original = "ativo"
+            dv = d.get("data_vencimento")
+            if dv:
+                if isinstance(dv, str):
+                    try:
+                        dv = datetime.strptime(dv, "%Y-%m-%d")
+                    except Exception:
+                        pass
+                if hasattr(dv, "__class__"):
+                    dias_vencido = (datetime.now() - dv).days
+                    if dias_vencido > 0:
+                        if dias_vencido <= 30:
+                            status_original = "vencido"
+                        else:
+                            status_original = "inadimplente"
+            await db.dividas.update_one(
+                {"_id": d["_id"]},
+                {
+                    "$set": {
+                        "status": status_original,
+                        "updated_at": data_cancelamento
+                    },
+                    "$unset": {"boleto_id": ""}
+                }
+            )
+            dividas_restauradas.append(str(d["_id"]))
 
-        msg_cancelamento = (
-            f"Boleto cancelado com sucesso! {num_dividas} "
-            f"dívida(s) restaurada(s) ao estado original."
-        )
-        mensagem_sucesso = msg_cancelamento
+        auditoria_data = {
+            "acao": "cancelamento_boleto",
+            "boleto_id": boleto_object_id,
+            "dividas_restauradas": dividas_ids,
+            "usuario": current_user.get("username", "sistema"),
+            "data": data_cancelamento,
+            "detalhes": {
+                "boleto_numero": boleto.get("numero_boleto"),
+                "valor_total": boleto.get("valor_total"),
+                "motivo": "cancelamento_solicitado"
+            },
+        }
+        await db.auditoria.insert_one(auditoria_data)
+
+        try:
+            if redis_cache and boleto.get("cliente_id"):
+                cliente_doc = await db.clientes.find_one({"_id": boleto.get("cliente_id")})
+                if cliente_doc and cliente_doc.get("cpf"):
+                    await redis_cache.delete(f"cliente:cpf:{normalize_cpf(cliente_doc.get('cpf'))}")
+        except Exception:
+            pass
 
         return BoletoCanceladoResponse(
             boleto_id=boleto_id,
@@ -1154,17 +1179,13 @@ async def cancelar_boleto(
             data_cancelamento=data_cancelamento.strftime("%Y-%m-%d %H:%M:%S"),
             dividas_restauradas=dividas_restauradas,
             historico_preservado=True,
-            message=mensagem_sucesso
+            message=f"Boleto cancelado com sucesso! {len(dividas_restauradas)} dívida(s) restaurada(s) ao estado original.",
         )
-
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Erro ao cancelar boleto: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erro interno do servidor"
-        )
+        raise HTTPException(status_code=500, detail="Erro interno do servidor")
 
 
 @app.post("/auth/token",

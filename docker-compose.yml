@@ -8,9 +8,12 @@ services:
     environment:
       - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017}
       - REDIS_URL=redis://redis:6379/0
+  - CACHE_ENABLED=true
       - DEBUG=false
       - LOG_LEVEL=INFO
       - ENVIRONMENT=production
+  - WEB_CONCURRENCY=2
+  - AUTO_CREATE_INDEXES=true
     depends_on:
       - mongo
       - redis

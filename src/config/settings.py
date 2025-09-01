@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     # Cache
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
     CACHE_TTL_SECONDS: int = Field(default=300)
+    CACHE_ENABLED: bool = Field(default=True)
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = Field(default=60)
@@ -66,6 +67,12 @@ class Settings(BaseSettings):
     # Storage
     STORAGE_TYPE: str = Field(default="local")
     STORAGE_PATH: str = Field(default="./storage")
+
+    # Indexes & migrations
+    AUTO_CREATE_INDEXES: bool = Field(default=True)
+
+    # Concurrency
+    WEB_CONCURRENCY: int = Field(default=2)
 
     model_config = {"env_file": ".env", "case_sensitive": True}
 
