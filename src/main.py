@@ -134,8 +134,10 @@ class BoletoCanceladoResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
+    expires_in: Optional[int] = None
+    message: Optional[str] = None
 
 
 class ErrorResponse(BaseModel):
@@ -1251,8 +1253,16 @@ async def login(
             data={"sub": form_data.username}, expires_delta=access_token_expires
         )
 
+        # Gera refresh token (válido por mais tempo)
+        refresh_token_expires = timedelta(days=7)
+        refresh_token = create_access_token(
+            data={"sub": form_data.username, "type": "refresh"},
+            expires_delta=refresh_token_expires
+        )
+
         return TokenResponse(
             access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
             expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             message="Login realizado com sucesso"
@@ -1303,8 +1313,16 @@ async def login_json(
             data={"sub": credentials.username}, expires_delta=access_token_expires
         )
 
+        # Gera refresh token (válido por mais tempo)
+        refresh_token_expires = timedelta(days=7)
+        refresh_token = create_access_token(
+            data={"sub": credentials.username, "type": "refresh"},
+            expires_delta=refresh_token_expires
+        )
+
         return TokenResponse(
             access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
             expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             message="Login realizado com sucesso"
