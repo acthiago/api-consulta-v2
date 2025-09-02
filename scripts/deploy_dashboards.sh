@@ -88,8 +88,9 @@ cd /opt/api-consulta-v2
 echo "🛑 Parando serviços..."
 docker-compose down
 
-echo "🔥 Removendo volumes antigos do Grafana..."
-docker volume rm apicontolav2_grafana-storage 2>/dev/null || true
+echo "🔥 Limpando volumes antigos do Grafana para evitar conflitos..."
+docker volume rm api-consulta-v2_grafana_data 2>/dev/null || echo "Volume não existe"
+docker volume rm apicontolav2_grafana-storage 2>/dev/null || echo "Volume antigo não existe"
 
 echo "📂 Verificando estrutura de arquivos..."
 echo "Docker Compose:"
