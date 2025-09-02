@@ -226,9 +226,17 @@ jobs:
           
           # Transfer monitoring files individually to debug
           echo "📤 Transferring monitoring configuration..."
-          scp monitoring/prometheus.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/
-          scp monitoring/grafana/datasources/prometheus.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/datasources/
-          scp monitoring/grafana/dashboards/api-monitoring.json root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/dashboards/
+          
+          # Create directories on VPS first
+          ssh root@69.62.103.163 << 'DIRS_EOF'
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/provisioning/datasources
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/provisioning/dashboards
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/dashboards-json
+          DIRS_EOF
+          
+          scp monitoring/prometheus.prod.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/prometheus.yml
+          scp -r monitoring/grafana/provisioning/* root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/provisioning/
+          scp -r monitoring/grafana/dashboards-json/* root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/dashboards-json/
           
           # Connect to VPS and deploy using Make
           echo "🚀 Starting deployment..."

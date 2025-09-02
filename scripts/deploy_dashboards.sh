@@ -64,7 +64,9 @@ find /tmp/api-deploy -name "*.json" -type f
 
 echo "🔗 Conectando no VPS ${VPS_HOST}..."
 # Criar estrutura no VPS
-ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${VPS_PATH}/monitoring/grafana/dashboards"
+ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${VPS_PATH}/monitoring/grafana/provisioning/datasources"
+ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${VPS_PATH}/monitoring/grafana/provisioning/dashboards"
+ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${VPS_PATH}/monitoring/grafana/dashboards-json"
 
 echo "📤 Enviando arquivos para o VPS..."
 # Enviar docker-compose
@@ -73,8 +75,11 @@ scp /tmp/api-deploy/docker-compose.vps.yml ${VPS_USER}@${VPS_HOST}:${VPS_PATH}/d
 # Enviar configuração do Prometheus
 scp /tmp/api-deploy/prometheus.prod.yml ${VPS_USER}@${VPS_HOST}:${VPS_PATH}/monitoring/prometheus.yml
 
-# Enviar dashboards do Grafana
-scp -r /tmp/api-deploy/grafana/* ${VPS_USER}@${VPS_HOST}:${VPS_PATH}/monitoring/grafana/
+# Enviar arquivos de provisionamento do Grafana
+scp -r /tmp/api-deploy/grafana/provisioning/* ${VPS_USER}@${VPS_HOST}:${VPS_PATH}/monitoring/grafana/provisioning/
+
+# Enviar dashboards JSON do Grafana
+scp -r /tmp/api-deploy/grafana/dashboards-json/* ${VPS_USER}@${VPS_HOST}:${VPS_PATH}/monitoring/grafana/dashboards-json/
 
 echo "🔄 Atualizando serviços no VPS..."
 ssh ${VPS_USER}@${VPS_HOST} << 'EOF'

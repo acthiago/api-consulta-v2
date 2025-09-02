@@ -39,9 +39,21 @@ copy_to_vps "nginx.vps.conf" "$PROJECT_DIR/nginx.conf"
 copy_to_vps "monitoring/prometheus.prod.yml" "$PROJECT_DIR/monitoring/prometheus.yml"
 
 echo "📊 Copiando configurações do Grafana..."
-if [ -f "monitoring/grafana/dashboards/api-monitoring.json" ]; then
-    copy_to_vps "monitoring/grafana/dashboards/api-monitoring.json" "$PROJECT_DIR/monitoring/grafana/dashboards/"
-fi
+# Criar estrutura de diretórios no VPS
+run_on_vps "mkdir -p $PROJECT_DIR/monitoring/grafana/provisioning/datasources"
+run_on_vps "mkdir -p $PROJECT_DIR/monitoring/grafana/provisioning/dashboards"
+run_on_vps "mkdir -p $PROJECT_DIR/monitoring/grafana/dashboards-json"
+
+# Copiar arquivos de provisionamento
+copy_to_vps "monitoring/grafana/provisioning/" "$PROJECT_DIR/monitoring/grafana/"
+
+# Copiar dashboards corrigidos
+for dashboard in monitoring/grafana/dashboards-json/*.json; do
+    if [ -f "$dashboard" ]; then
+        echo "  📋 Copiando $(basename "$dashboard")"
+        copy_to_vps "$dashboard" "$PROJECT_DIR/monitoring/grafana/dashboards-json/"
+    fi
+done
 
 echo "📦 Parando containers existentes..."
 run_on_vps "cd $PROJECT_DIR && docker compose down || echo 'Nenhum container rodando'"
