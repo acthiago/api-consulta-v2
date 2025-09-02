@@ -1,0 +1,397 @@
+{
+  "id": null,
+  "title": "\ud83c\udf43 MongoDB - Database Performance & Health",
+  "description": "Dashboard completo do MongoDB para monitoramento de banco de dados",
+  "tags": [
+    "mongodb",
+    "database",
+    "nosql",
+    "storage"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "\ud83c\udfe5 MongoDB Connection Status",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=\"api\"}",
+          "legendFormat": "API \u2192 MongoDB"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "DISCONNECTED",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "CONNECTED",
+                  "color": "green"
+                }
+              },
+              "type": "value"
+            }
+          ]
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": 2,
+      "title": "\ud83d\udc65 Total Clients",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "api_mongodb_total_clients",
+          "legendFormat": "Clients Count"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      }
+    },
+    {
+      "id": 3,
+      "title": "\ud83d\udd0d Queries/min",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(api_mongodb_queries_total[5m]) * 60",
+          "legendFormat": "Queries/min"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 1
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      }
+    },
+    {
+      "id": 4,
+      "title": "\u26a1 Avg Response Time",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(api_mongodb_query_duration_seconds_sum[5m]) / rate(api_mongodb_query_duration_seconds_count[5m])",
+          "legendFormat": "Avg Time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
+            ]
+          },
+          "decimals": 3
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      }
+    },
+    {
+      "id": 5,
+      "title": "\u274c Error Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(api_mongodb_errors_total[5m]) / rate(api_mongodb_queries_total[5m]) * 100",
+          "legendFormat": "Error %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "decimals": 2
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      }
+    },
+    {
+      "id": 6,
+      "title": "\ud83d\udcca Query Performance Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(api_mongodb_queries_total[5m])",
+          "legendFormat": "Queries/sec"
+        },
+        {
+          "expr": "rate(api_mongodb_query_duration_seconds_sum[5m]) / rate(api_mongodb_query_duration_seconds_count[5m])",
+          "legendFormat": "Avg Response Time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Queries/sec"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ops"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg Response Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      }
+    },
+    {
+      "id": 7,
+      "title": "\ud83c\udfaf Query Operations by Type",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "api_mongodb_operations_total",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "displayMode": "table",
+            "pieType": "donut"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 12,
+        "y": 4
+      }
+    },
+    {
+      "id": 8,
+      "title": "\u23f1\ufe0f Query Duration Percentiles",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(api_mongodb_query_duration_seconds_bucket[5m]))",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(api_mongodb_query_duration_seconds_bucket[5m]))",
+          "legendFormat": "P95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(api_mongodb_query_duration_seconds_bucket[5m]))",
+          "legendFormat": "P99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      }
+    },
+    {
+      "id": 9,
+      "title": "\ud83d\udcc8 Collection Statistics",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "api_mongodb_collection_documents",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true
+            },
+            "renameByName": {
+              "collection": "Collection",
+              "Value": "Documents Count"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "displayMode": "table"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 12,
+        "y": 12
+      }
+    },
+    {
+      "id": 10,
+      "title": "\ud83d\udd04 Connection Pool Status",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "api_mongodb_connections_active",
+          "legendFormat": "Active Connections"
+        },
+        {
+          "expr": "api_mongodb_connections_total",
+          "legendFormat": "Total Connections"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      }
+    },
+    {
+      "id": 11,
+      "title": "\ud83d\udea8 Recent Errors",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{job=\"api\"} |= \"mongodb\" |= \"error\"",
+          "legendFormat": ""
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      }
+    }
+  ]
+}

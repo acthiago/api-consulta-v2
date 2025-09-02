@@ -33,6 +33,31 @@ cp docker-compose.vps.yml /tmp/api-deploy/
 cp monitoring/prometheus.prod.yml /tmp/api-deploy/
 cp -r monitoring/grafana/ /tmp/api-deploy/
 
+# Corrigir estrutura JSON dos dashboards para o Grafana
+echo "🔧 Corrigindo estrutura JSON dos dashboards..."
+cd /tmp/api-deploy/grafana/dashboards-json
+for file in *.json; do
+    if [[ -f "$file" ]]; then
+        echo "  Processando $file"
+        python3 -c "
+import json
+try:
+    with open('$file', 'r') as f:
+        data = json.load(f)
+    # Se tem estrutura aninhada 'dashboard', extrair
+    if 'dashboard' in data:
+        with open('$file', 'w') as f:
+            json.dump(data['dashboard'], f, indent=2)
+        print('    ✅ Estrutura corrigida')
+    else:
+        print('    ✅ Estrutura já correta')
+except Exception as e:
+    print(f'    ❌ Erro: {e}')
+"
+    fi
+done
+cd -
+
 # Verificar se os dashboards foram copiados
 echo "✅ Arquivos preparados:"
 find /tmp/api-deploy -name "*.json" -type f
