@@ -20,10 +20,12 @@ scrape_configs:
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # Redis
+  # Redis Exporter
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis-exporter:9121']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
 
   # Traefik Gateway
   - job_name: 'traefik'
