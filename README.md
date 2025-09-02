@@ -269,74 +269,7 @@ Se você está migrando da versão anterior, consulte nosso [Guia de Migração]
 
 Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## 🎲 Geração de Massa de Dados
-
-Para facilitar os testes da API e do banco de dados, foi criado um gerador de massa de dados realistas com informações brasileiras.
-
-### Como usar
-
-#### Script de conveniência:
-```bash
-# Configuração pequena (desenvolvimento)
-./generate-data.sh small
-
-# Configuração média (testes)
-./generate-data.sh medium
-
-# Configuração grande (stress test)
-./generate-data.sh large
-
-# Modo interativo
-./generate-data.sh
-```
-
-#### Script direto:
-```bash
-python scripts/database/generate_test_data.py
-```
-
-### Configurações disponíveis
-
-| Configuração | Clientes | Usuários | Pagamentos | Boletos | Auditoria |
-|-------------|----------|----------|------------|---------|-----------|
-| **Pequena** | 20 | 3 | 50 | 30 | 100 |
-| **Média** | 50 | 5 | 200 | 150 | 500 |
-| **Grande** | 100 | 8 | 500 | 300 | 1,000 |
-
-### Características dos dados gerados
-
-#### 👥 Clientes
-- **CPFs válidos** com algoritmo de validação brasileiro
-- **Nomes realistas** com biblioteca Faker localizada
-- **Endereços brasileiros** com CEPs válidos
-- **Status variados**: ativo, inativo, bloqueado
-- **Timestamps** distribuídos nos últimos 6 meses
-
-#### 💰 Pagamentos
-- **Valores monetários** em formato Decimal128 (compatível com MongoDB)
-- **Status**: pendente, pago, cancelado
-- **Tipos**: PIX, cartão, boleto
-- **Datas de vencimento** distribuídas entre -30 e +60 dias
-- **Códigos de transação** únicos (UUID4)
-
-#### 🧾 Boletos
-- **Números de boleto** no formato padrão brasileiro
-- **Códigos de barras** e **linhas digitáveis** válidos
-- **Bancos brasileiros** (001, 033, 104, 237, 341, 399)
-- **Relacionamento** com clientes e pagamentos
-- **Agências e contas** realistas
-
-#### 👤 Usuários
-- **Emails únicos** no domínio @apiconsulta.com
-- **Roles**: admin, readonly
-- **Senhas criptografadas** com bcrypt
-- **Usuário padrão**: admin@apiconsulta.com / admin123
-
-#### 📝 Auditoria
-- **Logs de ações** distribuídos no tempo
-- **Operações**: CREATE, UPDATE, DELETE, LOGIN
-- **Entidades**: clientes, pagamentos, boletos, usuarios
-- **IPs** e **User-Agents** variados
+## �️ Informações de Acesso
 
 ### Log de execução
 
