@@ -31,12 +31,17 @@ if ! run_on_vps "echo 'Conexão OK'"; then
 fi
 
 echo "📁 Criando estrutura de diretórios na VPS..."
-run_on_vps "mkdir -p $PROJECT_DIR/logs $PROJECT_DIR/storage $PROJECT_DIR/monitoring"
+run_on_vps "mkdir -p $PROJECT_DIR/logs $PROJECT_DIR/storage $PROJECT_DIR/monitoring/grafana/dashboards"
 
 echo "📄 Copiando arquivos de configuração..."
 copy_to_vps "docker-compose.vps.yml" "$PROJECT_DIR/docker-compose.yml"
 copy_to_vps "nginx.vps.conf" "$PROJECT_DIR/nginx.conf"
-copy_to_vps "monitoring/prometheus.yml" "$PROJECT_DIR/monitoring/prometheus.yml"
+copy_to_vps "monitoring/prometheus.prod.yml" "$PROJECT_DIR/monitoring/prometheus.yml"
+
+echo "📊 Copiando configurações do Grafana..."
+if [ -f "monitoring/grafana/dashboards/api-monitoring.json" ]; then
+    copy_to_vps "monitoring/grafana/dashboards/api-monitoring.json" "$PROJECT_DIR/monitoring/grafana/dashboards/"
+fi
 
 echo "📦 Parando containers existentes..."
 run_on_vps "cd $PROJECT_DIR && docker compose down || echo 'Nenhum container rodando'"
@@ -61,6 +66,24 @@ else
     echo "📝 Logs da API:"
     run_on_vps "cd $PROJECT_DIR && docker compose logs api --tail=20"
     exit 1
+fi
+
+echo "📊 Verificando Redis Exporter..."
+if run_on_vps "curl -f http://localhost:9121/metrics > /dev/null"; then
+    echo "✅ Redis Exporter funcionando!"
+else
+    echo "❌ Erro: Redis Exporter não está respondendo"
+    echo "📝 Logs do Redis Exporter:"
+    run_on_vps "cd $PROJECT_DIR && docker compose logs redis-exporter --tail=10"
+fi
+
+echo "🔍 Verificando Prometheus..."
+if run_on_vps "curl -f http://localhost:9090/prometheus/-/healthy > /dev/null"; then
+    echo "✅ Prometheus funcionando!"
+else
+    echo "❌ Erro: Prometheus não está respondendo"
+    echo "📝 Logs do Prometheus:"
+    run_on_vps "cd $PROJECT_DIR && docker compose logs prometheus --tail=10"
 fi
 
 echo "🌐 Testando acesso externo..."
