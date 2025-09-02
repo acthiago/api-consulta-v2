@@ -77,7 +77,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-      - ./monitoring/grafana/dashboards-json:/etc/grafana/provisioning/dashboards-json
+      - ./monitoring/grafana/dashboards-json:/opt/dashboards
     networks:
       - api_network
 
