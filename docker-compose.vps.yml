@@ -104,7 +104,7 @@ services:
     container_name: api-consulta-v2-prometheus
     restart: unless-stopped
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus.vps.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -137,7 +137,7 @@ services:
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/provisioning-vps:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards-json:/opt/dashboards:ro
     networks:
       - monitoring_network

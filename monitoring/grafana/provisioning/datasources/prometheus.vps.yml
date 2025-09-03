@@ -1,0 +1,23 @@
+apiVersion: 1
+
+# Apagar datasources antigos antes de provisionar novos
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090/prometheus
+    isDefault: true
+    editable: false
+    uid: prometheus-api-consulta
+    orgId: 1
+    version: 1
+    jsonData:
+      timeInterval: "5s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+      manageAlerts: true
+      alertmanagerUid: ""
