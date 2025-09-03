@@ -1,0 +1,242 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "🔴 Redis - Cache Performance & Health",
+    "description": "Dashboard completo do Redis para monitoramento de cache",
+    "tags": ["redis", "cache", "memory", "database"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "🏥 Redis Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "redis_up",
+            "legendFormat": "Redis Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "options": {
+                  "0": {"text": "DOWN", "color": "red"},
+                  "1": {"text": "UP", "color": "green"}
+                },
+                "type": "value"
+              }
+            ]
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "💾 Memory Usage",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes / redis_memory_max_bytes * 100",
+            "legendFormat": "Memory %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 3, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "👥 Connected Clients",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "redis_connected_clients",
+            "legendFormat": "Clients"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "palette-classic"}
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 6, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "⚡ Operations/sec",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(redis_commands_processed_total[5m])",
+            "legendFormat": "Ops/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "color": {"mode": "palette-classic"}
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 9, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "🎯 Hit Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) * 100",
+            "legendFormat": "Hit Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "green", "value": 90}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 12, "y": 0}
+      },
+      {
+        "id": 6,
+        "title": "💾 Memory Usage Over Time",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Used Memory"
+          },
+          {
+            "expr": "redis_memory_used_rss_bytes",
+            "legendFormat": "RSS Memory"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+      },
+      {
+        "id": 7,
+        "title": "📊 Command Statistics",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(redis_commands_total[5m])",
+            "legendFormat": "{{cmd}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+      },
+      {
+        "id": 8,
+        "title": "🔄 Network I/O",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(redis_net_input_bytes_total[5m])",
+            "legendFormat": "Input"
+          },
+          {
+            "expr": "rate(redis_net_output_bytes_total[5m])",
+            "legendFormat": "Output"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 12}
+      },
+      {
+        "id": 9,
+        "title": "🗃️ Keys by Database",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "redis_db_keys",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true},
+              "renameByName": {
+                "db": "Database",
+                "Value": "Keys Count"
+              }
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 12}
+      },
+      {
+        "id": 10,
+        "title": "⏱️ Command Latency",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "redis_commands_duration_seconds_total / redis_commands_total",
+            "legendFormat": "{{cmd}} avg latency"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12}
+      }
+    ]
+  }
+}
