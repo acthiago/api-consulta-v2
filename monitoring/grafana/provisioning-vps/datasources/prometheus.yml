@@ -18,6 +18,10 @@ datasources:
     jsonData:
       timeInterval: "5s"
       queryTimeout: "60s"
-      httpMethod: "POST"
+      httpMethod: "GET"
       manageAlerts: true
       alertmanagerUid: ""
+      # Configurações específicas para VPS com route-prefix
+      httpHeaderName1: "Accept"
+    httpHeaderValue1: "application/json"
+    basicAuth: false

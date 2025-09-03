@@ -1,0 +1,45 @@
+apiVersion: 1
+
+# Apagar datasources antigos antes de provisionar novos
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Prometheus-Fallback
+    orgId: 1
+
+datasources:
+  # Datasource principal com route-prefix
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090/prometheus
+    isDefault: true
+    editable: false
+    uid: prometheus-api-consulta
+    orgId: 1
+    version: 1
+    jsonData:
+      timeInterval: "5s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+      manageAlerts: true
+      alertmanagerUid: ""
+    basicAuth: false
+
+  # Datasource fallback sem route-prefix (caso o Prometheus não esteja funcionando com prefix)
+  - name: Prometheus-Fallback
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false
+    editable: true
+    uid: prometheus-fallback
+    orgId: 1
+    version: 1
+    jsonData:
+      timeInterval: "5s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+      manageAlerts: false
+      alertmanagerUid: ""
+    basicAuth: false

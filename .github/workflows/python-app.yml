@@ -149,7 +149,77 @@ jobs:
             BUILDTIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
-  # ===== JOB 4: DEPLOY TO STAGING =====
+  # ===== JOB 4: VALIDATE VPS CONFIGURATIONS =====
+  validate-vps-config:
+    name: 🔧 Validate VPS Configurations
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🔍 Validate Docker Compose files
+        run: |
+          # Install docker-compose for validation
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          
+          echo "🔍 Validating docker-compose.vps.yml..."
+          docker-compose -f docker-compose.vps.yml config --quiet
+          
+          echo "🔍 Validating docker-compose.vps-simple.yml..."
+          docker-compose -f docker-compose.vps-simple.yml config --quiet
+          
+          echo "✅ All Docker Compose files are valid!"
+      
+      - name: 🔍 Validate VPS configurations
+        run: |
+          echo "🔍 Checking VPS monitoring configurations..."
+          
+          # Check if all required VPS files exist
+          required_files=(
+            "monitoring/prometheus-vps/prometheus-robust.yml"
+            "monitoring/prometheus-vps/prometheus-simple.yml"
+            "monitoring/grafana/provisioning-vps/datasources/prometheus-direct.yml"
+            "monitoring/grafana/provisioning-vps/datasources/prometheus-robust.yml"
+            "scripts/debug-vps.sh"
+            "docs/TROUBLESHOOTING_VPS.md"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file exists"
+            else
+              echo "❌ $file is missing"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All VPS configuration files are present!"
+      
+      - name: 🔍 Validate YAML syntax
+        run: |
+          echo "🔍 Validating YAML syntax..."
+          
+          # Install yq for YAML validation
+          sudo snap install yq
+          
+          yaml_files=(
+            "monitoring/prometheus-vps/prometheus-robust.yml"
+            "monitoring/prometheus-vps/prometheus-simple.yml"
+            "monitoring/grafana/provisioning-vps/datasources/prometheus-direct.yml"
+            "monitoring/grafana/provisioning-vps/datasources/prometheus-robust.yml"
+          )
+          
+          for file in "${yaml_files[@]}"; do
+            echo "Validating $file..."
+            yq eval '.' "$file" > /dev/null
+            echo "✅ $file syntax is valid"
+          done
+
+  # ===== JOB 5: DEPLOY TO STAGING =====
   deploy-staging:
     name: 🚀 Deploy to Staging
     runs-on: ubuntu-latest
@@ -165,11 +235,11 @@ jobs:
           # Aqui você adicionaria os comandos específicos para deploy
           # Por exemplo: kubectl, docker-compose, ou chamadas para API
 
-  # ===== JOB 5: DEPLOY TO PRODUCTION =====
+  # ===== JOB 6: DEPLOY TO PRODUCTION =====
   deploy-production:
     name: 🌟 Deploy to Production VPS
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push, validate-vps-config]
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
     
@@ -224,22 +294,31 @@ jobs:
           scp docker-compose.vps.yml root@69.62.103.163:/opt/api-consulta-v2/
           scp Makefile root@69.62.103.163:/opt/api-consulta-v2/
           
-          # Transfer monitoring files individually to debug
-          echo "📤 Transferring monitoring configuration..."
+          # Transfer monitoring files with robust VPS configurations
+          echo "📤 Transferring monitoring configuration with VPS optimizations..."
           
           # Create directories on VPS first
           ssh root@69.62.103.163 << 'DIRS_EOF'
-            mkdir -p /opt/api-consulta-v2/monitoring/grafana/provisioning/datasources
-            mkdir -p /opt/api-consulta-v2/monitoring/grafana/provisioning/dashboards
+            mkdir -p /opt/api-consulta-v2/monitoring/prometheus-vps
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/provisioning-vps/datasources
+            mkdir -p /opt/api-consulta-v2/monitoring/grafana/provisioning-vps/dashboards
             mkdir -p /opt/api-consulta-v2/monitoring/grafana/dashboards-json
+            mkdir -p /opt/api-consulta-v2/scripts
+            mkdir -p /opt/api-consulta-v2/docs
           DIRS_EOF
           
-          scp monitoring/prometheus.prod.yml root@69.62.103.163:/opt/api-consulta-v2/monitoring/prometheus.yml
-          scp -r monitoring/grafana/provisioning/* root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/provisioning/
+          # Transfer VPS-specific configurations
+          scp -r monitoring/prometheus-vps/* root@69.62.103.163:/opt/api-consulta-v2/monitoring/prometheus-vps/
+          scp -r monitoring/grafana/provisioning-vps/* root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/provisioning-vps/
           scp -r monitoring/grafana/dashboards-json/* root@69.62.103.163:/opt/api-consulta-v2/monitoring/grafana/dashboards-json/
           
-          # Connect to VPS and deploy using Make
-          echo "🚀 Starting deployment..."
+          # Transfer debug scripts and documentation
+          scp scripts/debug-vps.sh root@69.62.103.163:/opt/api-consulta-v2/scripts/
+          scp docs/TROUBLESHOOTING_VPS.md root@69.62.103.163:/opt/api-consulta-v2/docs/
+          scp docker-compose.vps-simple.yml root@69.62.103.163:/opt/api-consulta-v2/
+          
+          # Connect to VPS and deploy using Make with robust monitoring
+          echo "🚀 Starting deployment with enhanced VPS configurations..."
           ssh root@69.62.103.163 << EOF
             export DOCKER_HUB_USERNAME=$DOCKER_USERNAME
             export MONGO_URI="$MONGO_URI"
@@ -248,8 +327,76 @@ jobs:
             echo "📁 Preparing deployment..."
             cd /opt/api-consulta-v2
             
+            # Make debug script executable
+            chmod +x scripts/debug-vps.sh
+            
+            echo "🔍 Pre-deployment verification..."
+            ./scripts/debug-vps.sh config
+            
             echo "🚀 Deploying using Make..."
             make docker-vps
             
+            echo "⏳ Waiting for services to initialize..."
+            sleep 30
+            
+            echo "🔍 Post-deployment health check..."
+            ./scripts/debug-vps.sh connectivity
+            
             echo "✅ Deployment completed successfully!"
           EOF
+          
+      - name: 🌐 Verify deployment endpoints
+        run: |
+          echo "🔍 Verifying VPS endpoints are accessible..."
+          
+          # Wait a bit more for services to fully start
+          sleep 60
+          
+          # Test main endpoints (with retries)
+          endpoints=(
+            "http://62.62.103.163:8000/health:API Health"
+            "http://62.62.103.163:9090/-/healthy:Prometheus Health"
+            "http://62.62.103.163:3000/api/health:Grafana Health"
+          )
+          
+          for endpoint_info in "${endpoints[@]}"; do
+            IFS=':' read -r url description <<< "$endpoint_info"
+            echo "Testing $description: $url"
+            
+            for i in {1..5}; do
+              if curl -f -s "$url" > /dev/null; then
+                echo "✅ $description is responding"
+                break
+              else
+                echo "⏳ Attempt $i/5 failed, retrying in 10s..."
+                sleep 10
+                if [ $i -eq 5 ]; then
+                  echo "⚠️ $description is not responding after 5 attempts"
+                fi
+              fi
+            done
+          done
+
+  # ===== JOB 7: POST-DEPLOYMENT NOTIFICATION =====
+  notify-completion:
+    name: 📢 Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always() && (github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'))
+    
+    steps:
+      - name: 📢 Deployment Status Summary
+        run: |
+          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "🎉 DEPLOYMENT SUCCESS!"
+            echo "✅ API Consulta V2 deployed successfully to VPS"
+            echo "🌐 API: http://62.62.103.163:8000"
+            echo "📊 Prometheus: http://62.62.103.163:9090"
+            echo "📈 Grafana: http://62.62.103.163:3000"
+            echo "📚 Troubleshooting: Use ./scripts/debug-vps.sh for diagnostics"
+          else
+            echo "❌ DEPLOYMENT FAILED!"
+            echo "🔍 Check the deploy-production job logs for details"
+            echo "📚 Use docs/TROUBLESHOOTING_VPS.md for guidance"
+            exit 1
+          fi

@@ -1,14 +1,8 @@
 networks:
   api_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
   monitoring_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.21.0.0/16
 
 volumes:
   prometheus_data:
@@ -36,25 +30,13 @@ services:
       - PORT=8000
       - REDIS_URL=redis://redis:6379/0
       - PROMETHEUS_METRICS_PORT=8001
+    ports:
+      - "8000:8000"
     networks:
       - api_network
       - monitoring_network
-    volumes:
-      - ./logs:/app/logs
-      - ./storage:/app/storage
     depends_on:
       - redis
-    labels:
-      # Traefik auto-discovery
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`api.thiagoac.com`)"
-      - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
-      
-      # Rate limiting
-      - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=100"
-      - "traefik.http.middlewares.api-ratelimit.ratelimit.average=10"
-      - "traefik.http.routers.api.middlewares=api-ratelimit"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -87,6 +69,8 @@ services:
     restart: unless-stopped
     environment:
       - REDIS_ADDR=redis://redis:6379
+    ports:
+      - "9121:9121"
     depends_on:
       - redis
     networks:
@@ -98,7 +82,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ===== Prometheus Monitoring =====
+  # ===== Prometheus Monitoring (Simplificado) =====
   prometheus:
     image: prom/prometheus:latest
     container_name: api-consulta-v2-prometheus
@@ -107,28 +91,20 @@ services:
       - ./monitoring/prometheus-vps:/etc/prometheus:ro
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus-robust.yml'
+      - '--config.file=/etc/prometheus/prometheus-simple.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
+      - '--storage.tsdb.retention.time=15d'
       - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
       - '--log.level=info'
-      - '--web.route-prefix=/prometheus'
-      - '--web.external-url=https://monitor.thiagoac.com/prometheus'
     ports:
-      - "9090:9090"  # Exposição para debugging
+      - "9090:9090"
     networks:
       - monitoring_network
     depends_on:
       - api
-    labels:
-      # Traefik auto-discovery
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`monitor.thiagoac.com`) && PathPrefix(`/prometheus`)"
-      - "traefik.http.routers.prometheus.entrypoints=web"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - redis-exporter
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -136,83 +112,27 @@ services:
       retries: 3
       start_period: 30s
 
-  # ===== Grafana Dashboard =====
+  # ===== Grafana Dashboard (Simplificado) =====
   grafana:
     image: grafana/grafana:latest
     container_name: api-consulta-v2-grafana
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_SERVER_ROOT_URL=https://monitor.thiagoac.com
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
       - GF_LOG_LEVEL=info
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     ports:
-      - "3000:3000"  # Exposição para debugging
+      - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning-vps:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards-json:/opt/dashboards:ro
     networks:
       - monitoring_network
     depends_on:
       - prometheus
-    labels:
-      # Traefik auto-discovery  
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`monitor.thiagoac.com`)"
-      - "traefik.http.routers.grafana.entrypoints=web"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-
-  # ===== Traefik API Gateway =====
-  traefik:
-    image: traefik:v3.0
-    container_name: traefik-gateway
-    restart: unless-stopped
-    command:
-      # Enable Docker provider
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=api_network"
-      
-      # Configure entrypoints
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      
-      # Enable API and Dashboard
-      - "--api.dashboard=true"
-      - "--api.insecure=true"
-      
-      # Logging
-      - "--log.level=INFO"
-      - "--accesslog=true"
-      
-      # Metrics for Prometheus
-      - "--metrics.prometheus=true"
-      - "--metrics.prometheus.addEntryPointsLabels=true"
-      - "--metrics.prometheus.addServicesLabels=true"
-    ports:
-      - "80:80"       # HTTP
-      - "443:443"     # HTTPS
-      - "8080:8080"   # Traefik Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./ssl:/ssl:ro
-    networks:
-      - api_network
-      - monitoring_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`gateway.thiagoac.com`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
-      interval: 30s
-      timeout: 10s
-      retries: 3

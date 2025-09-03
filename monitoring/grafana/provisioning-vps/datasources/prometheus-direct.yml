@@ -1,0 +1,36 @@
+version: "3"
+
+datasources:
+  # Datasource sem route-prefix (fallback)
+  - name: Prometheus-Direct
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    uid: prometheus-direct
+    orgId: 1
+    version: 1
+    jsonData:
+      timeInterval: "5s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+      manageAlerts: true
+    basicAuth: false
+    
+  # Datasource com route-prefix (se funcionar)
+  - name: Prometheus-RoutePrefix
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090/prometheus
+    isDefault: false
+    editable: true
+    uid: prometheus-route-prefix
+    orgId: 1
+    version: 1
+    jsonData:
+      timeInterval: "5s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+      manageAlerts: false
+    basicAuth: false
