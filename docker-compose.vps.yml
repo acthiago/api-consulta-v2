@@ -104,7 +104,7 @@ services:
     container_name: api-consulta-v2-prometheus
     restart: unless-stopped
     volumes:
-      - ./monitoring/prometheus.vps.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus-vps:/etc/prometheus:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

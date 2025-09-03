@@ -48,34 +48,43 @@ scrape_configs:
 ```
 
 ### 2. Datasource Específico VPS
-Criado arquivo: `monitoring/grafana/provisioning-vps/datasources/prometheus.yml`
+Criado estrutura: `monitoring/grafana/provisioning-vps/`
 ```yaml
 datasources:
   - name: Prometheus
     url: http://prometheus:9090/prometheus  # ✅ Incluído route-prefix
 ```
 
-### 3. Estrutura de Provisioning VPS
+### 3. Estrutura de Diretório VPS
+Para resolver problemas de mount, criado:
 ```
-monitoring/grafana/
-├── provisioning/          # Para local/dev
-└── provisioning-vps/      # Para produção VPS
-    ├── datasources/
-    │   └── prometheus.yml  # URL com /prometheus
-    └── dashboards/
-        └── dashboards.yml  # Mesmo arquivo
+monitoring/
+├── prometheus-vps/           # ✅ Diretório completo para mount
+│   └── prometheus.yml        # Configuração específica VPS
+└── grafana/
+    └── provisioning-vps/     # ✅ Provisioning específico VPS
 ```
 
 ### 4. Docker Compose VPS Atualizado
 ```yaml
 prometheus:
   volumes:
-    - ./monitoring/prometheus.vps.yml:/etc/prometheus/prometheus.yml:ro  # ✅ Config específica
+    - ./monitoring/prometheus-vps:/etc/prometheus:ro  # ✅ Mount de diretório
 
 grafana:
   volumes:
     - ./monitoring/grafana/provisioning-vps:/etc/grafana/provisioning:ro  # ✅ Provisioning específico
 ```
+
+### 5. Fix do Mount Error
+**Problema original**: 
+```
+unable to start container process: error mounting "/opt/api-consulta-v2/monitoring/prometheus.vps.yml" to rootfs at "/etc/prometheus/prometheus.yml": create mountpoint
+```
+
+**Solução**: Mount de diretório inteiro em vez de arquivo individual:
+- ❌ `./monitoring/prometheus.vps.yml:/etc/prometheus/prometheus.yml:ro` 
+- ✅ `./monitoring/prometheus-vps:/etc/prometheus:ro`
 
 ## 🚀 Deploy Instructions
 
@@ -128,6 +137,14 @@ curl -u admin:admin123 "https://monitor.thiagoac.com/api/datasources"
 
 ---
 
-**Status**: ✅ **CORRIGIDO**
+**Status**: ✅ **TOTALMENTE CORRIGIDO E TESTADO**
 **Data**: 2025-09-03
-**Ambiente**: VPS Production ready
+**Ambiente**: VPS Production funcional
+
+### 🎯 Validação Final
+- ✅ Prometheus: Todos targets UP (api, redis, traefik, self-scraping)
+- ✅ Grafana: Datasource conectado, query funcionando
+- ✅ Mount Issues: Resolvidos com estrutura de diretório
+- ✅ Route Prefix: Configurado corretamente em todos componentes
+
+**Sistema pronto para produção!** 🚀
